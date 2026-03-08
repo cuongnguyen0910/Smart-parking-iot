@@ -73,6 +73,45 @@ BEGIN
     );
     INSERT INTO public.profiles (id, email, full_name, role) VALUES (sv_id, 'sinhvien@hcmut.edu.vn', 'Nguyễn Văn A (SV)', 'student');
 
+    -- GIẢNG VIÊN
+    DECLARE gv_id UUID := gen_random_uuid();
+    BEGIN
+        INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, is_super_admin)
+        VALUES (
+            gv_id, 'authenticated', 'authenticated', 'giangvien@hcmut.edu.vn', 
+            crypt(raw_pass, gen_salt('bf')), 
+            now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Lê Thị B (Giảng Viên)"}', 
+            now(), now(), '', false
+        );
+        INSERT INTO public.profiles (id, email, full_name, role) VALUES (gv_id, 'giangvien@hcmut.edu.vn', 'Lê Thị B (Giảng Viên)', 'faculty');
+    END;
+
+    -- CÁN BỘ
+    DECLARE cb_id UUID := gen_random_uuid();
+    BEGIN
+        INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, is_super_admin)
+        VALUES (
+            cb_id, 'authenticated', 'authenticated', 'canbo@hcmut.edu.vn', 
+            crypt(raw_pass, gen_salt('bf')), 
+            now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Trần Văn C (Cán Bộ)"}', 
+            now(), now(), '', false
+        );
+        INSERT INTO public.profiles (id, email, full_name, role) VALUES (cb_id, 'canbo@hcmut.edu.vn', 'Trần Văn C (Cán Bộ)', 'staff');
+    END;
+
+    -- KHÁCH VÃNG LAI
+    DECLARE kh_id UUID := gen_random_uuid();
+    BEGIN
+        INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, is_super_admin)
+        VALUES (
+            kh_id, 'authenticated', 'authenticated', 'guest@gmail.com', 
+            crypt(raw_pass, gen_salt('bf')), 
+            now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Khách Vãng Lai"}', 
+            now(), now(), '', false
+        );
+        INSERT INTO public.profiles (id, email, full_name, role) VALUES (kh_id, 'guest@gmail.com', 'Khách Vãng Lai', 'visitor');
+    END;
+
 END $$;
 
 -- 3. CƯỚC PHÍ / BÃI XE (KHÔNG ĐỔI)
