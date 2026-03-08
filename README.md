@@ -116,6 +116,17 @@ Dưới đây là danh sách các tài khoản gợi ý để bạn tạo trong 
 | **Cán bộ** | `canbo@hcmut.edu.vn` | `12345678` | `staff` | Member View |
 | **Khách** | `guest@gmail.com` | `12345678` | `visitor` | Member View |
 
+### 🔐 Cơ chế Đăng nhập & Điều hướng
+
+Hệ thống đã tích hợp logic tự động điều hướng dựa trên Role (Vai trò) sau khi đăng nhập thành công tại trang chủ:
+
+1. Khi bấm **"Login with HCMUT SSO"**, bạn nhập Email và Mật khẩu từ danh sách Mock Data.
+2. Hệ thống sẽ kiểm tra vai trò của User trong database:
+   - Nếu là **`admin`** -> Tự động chuyển hướng sang giao diện Quản trị (`/admin`).
+   - Nếu là **`operator`** -> Tự động chuyển hướng sang giao diện Vận hành (`/operator`).
+   - Các vai trò khác (Student, Faculty...) -> Vào giao diện người dùng Member.
+3. Chức năng **Sign Out** đã được tích hợp trong phần **Settings** của cả 3 View để quay về trang đăng nhập.
+
 *Lưu ý: Sau khi tạo user trên Supabase, hãy chạy các câu lệnh trong file [mock_data.sql](./mock_data.sql) để cập nhật Role chính xác.*
 
 ---

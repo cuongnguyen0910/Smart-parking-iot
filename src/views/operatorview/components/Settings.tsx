@@ -1,24 +1,34 @@
-import React from 'react';
-import { 
-  User, 
-  Camera, 
-  Settings as SettingsIcon, 
-  Moon, 
-  Volume2, 
-  RefreshCw, 
-  Lock, 
-  ShieldCheck, 
-  HelpCircle, 
-  BookOpen, 
+import { supabase } from '../../../shared/supabase';
+import { useNavigate } from 'react-router-dom';
+import {
+  User,
+  Camera,
+  Settings as SettingsIcon,
+  Moon,
+  Volume2,
+  RefreshCw,
+  Lock,
+  ShieldCheck,
+  HelpCircle,
+  BookOpen,
   Headset,
   ChevronRight,
   ExternalLink,
-  Mail
+  Mail,
+  LogOut
 } from 'lucide-react';
 
 export default function Settings() {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
+
   return (
     <div className="space-y-8">
+      {/* ... existing header and sections ... */}
       <header className="mb-8">
         <h2 className="text-3xl font-extrabold text-slate-900">Settings</h2>
         <p className="text-slate-500 mt-1">Manage your operator profile and system preferences</p>
@@ -36,9 +46,9 @@ export default function Settings() {
           <div className="p-8 flex flex-col md:flex-row gap-8 items-start">
             <div className="relative">
               <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-slate-100">
-                <img 
-                  src="https://picsum.photos/seed/profile/200/200" 
-                  alt="Profile" 
+                <img
+                  src="https://picsum.photos/seed/profile/200/200"
+                  alt="Profile"
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
@@ -62,7 +72,7 @@ export default function Settings() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Contact Email</label>
-                <p className="text-base font-semibold text-primary">a.nguyen@hcmut.edu.vn</p>
+                <p className="text-base font-semibold text-primary">operator@hcmut.edu.vn</p>
               </div>
             </div>
           </div>
@@ -98,19 +108,6 @@ export default function Settings() {
                 <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
-            {/* Refresh Rate */}
-            <div className="p-6 flex items-center justify-between">
-              <div>
-                <p className="font-bold">Auto-refresh Rate</p>
-                <p className="text-sm text-slate-500">Control how often the gate live-feed updates</p>
-              </div>
-              <select className="bg-slate-100 border-none rounded-xl text-sm font-bold py-2 px-4 focus:ring-2 focus:ring-primary outline-none">
-                <option>Real-time</option>
-                <option selected>5 seconds</option>
-                <option>10 seconds</option>
-                <option>30 seconds</option>
-              </select>
-            </div>
           </div>
         </section>
 
@@ -125,13 +122,6 @@ export default function Settings() {
             <div className="space-y-3">
               <button className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-primary/5 rounded-xl border border-slate-100 transition-all group">
                 <span className="text-sm font-bold">Change Password</span>
-                <ChevronRight className="text-slate-400 group-hover:text-primary transition-colors" size={18} />
-              </button>
-              <button className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-primary/5 rounded-xl border border-slate-100 transition-all group">
-                <div className="flex items-center gap-2 text-sm font-bold">
-                  <span>2FA Authentication</span>
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[10px] uppercase">Active</span>
-                </div>
                 <ChevronRight className="text-slate-400 group-hover:text-primary transition-colors" size={18} />
               </button>
             </div>
@@ -151,15 +141,22 @@ export default function Settings() {
                 </div>
                 <ExternalLink className="text-primary" size={16} />
               </button>
-              <button className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-primary/5 rounded-xl border border-slate-100 transition-all group">
-                <div className="flex items-center gap-3">
-                  <Headset className="text-slate-400 group-hover:text-primary transition-colors" size={20} />
-                  <span className="text-sm font-bold">Contact System IT</span>
-                </div>
-                <Mail className="text-slate-400 group-hover:text-primary transition-colors" size={18} />
-              </button>
             </div>
           </div>
+        </section>
+
+        <section className="bg-rose-50 p-6 rounded-2xl border border-rose-100 shadow-sm flex flex-col gap-4 mb-12">
+          <div className="flex items-center gap-3">
+            <LogOut className="text-rose-600" size={20} />
+            <h3 className="font-bold text-lg text-rose-900">Account Access</h3>
+          </div>
+          <p className="text-sm text-rose-700/70 mb-2">Sign out from the operator console safely.</p>
+          <button
+            onClick={handleLogout}
+            className="w-full py-4 bg-white border border-rose-200 rounded-xl text-rose-600 font-bold hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+          >
+            Sign Out Now
+          </button>
         </section>
 
         <div className="flex justify-end gap-4 pb-12">

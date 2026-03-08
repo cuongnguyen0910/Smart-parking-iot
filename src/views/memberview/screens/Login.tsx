@@ -1,28 +1,65 @@
-import React from 'react';
-import { 
-  Fingerprint, 
-  UserPlus, 
-  ArrowRight, 
-  HelpCircle, 
-  Languages, 
+import React, { useState } from 'react';
+import {
+  Fingerprint,
+  UserPlus,
+  ArrowRight,
+  HelpCircle,
+  Languages,
   Moon,
   ParkingCircle,
-  Zap
+  Zap,
+  Mail,
+  Lock,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
+import { supabase } from '../../../shared/supabase';
+
+import { User } from '@supabase/supabase-js';
 
 interface LoginProps {
-  onLogin: () => void;
+  onLogin: (user: User) => void;
   onVisitor: () => void;
 }
 
 export default function Login({ onLogin, onVisitor }: LoginProps) {
+  const [showSSOForm, setShowSSOForm] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('12345678'); // Default password for faster testing
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) throw authError;
+
+      if (data.user) {
+        onLogin(data.user);
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="relative flex min-h-screen w-full overflow-hidden bg-background-light">
       {/* Left Side: Visual/Branding */}
       <div className="hidden lg:flex lg:w-3/5 relative overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center" 
+        <div
+          className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: "url('https://picsum.photos/seed/campus/1200/800')" }}
         >
           <div className="absolute inset-0 bg-gradient-to-tr from-primary/80 to-transparent"></div>
@@ -34,8 +71,8 @@ export default function Login({ onLogin, onVisitor }: LoginProps) {
             </div>
             <span className="text-white text-2xl font-bold tracking-tight">HCMUT Smart Parking</span>
           </div>
-          
-          <motion.div 
+
+          <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             className="glass p-10 rounded-2xl max-w-lg"
@@ -54,7 +91,7 @@ export default function Login({ onLogin, onVisitor }: LoginProps) {
               </div>
             </div>
           </motion.div>
-          
+
           <div className="flex items-center gap-2 text-white/60 text-sm">
             <Zap size={14} />
             Powered by HCMUT Tech Services
@@ -78,14 +115,92 @@ export default function Login({ onLogin, onVisitor }: LoginProps) {
             <p className="text-slate-500">Please sign in to access your parking dashboard.</p>
           </div>
 
-          {/* Main Action: SSO Login */}
-          <button 
-            onClick={onLogin}
-            className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-primary to-blue-600 text-white py-4 px-6 rounded-2xl font-bold text-lg mb-8 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95"
-          >
-            <Fingerprint size={24} />
-            Login with HCMUT SSO
-          </button>
+          <AnimatePresence mode="wait">
+            {!showSSOForm ? (
+              <motion.div
+                key="choice"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                {/* Main Action: SSO Login */}
+                <button
+                  onClick={() => setShowSSOForm(true)}
+                  className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-primary to-blue-600 text-white py-4 px-6 rounded-2xl font-bold text-lg mb-8 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95"
+                >
+                  <Fingerprint size={24} />
+                  Login with HCMUT SSO
+                </button>
+              </motion.div>
+            ) : (
+              <motion.form
+                key="form"
+                onSubmit={handleLogin}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-4 mb-8"
+              >
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 ml-1">HCMUT Email</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Mail size={20} className="text-slate-400 group-focus-within:text-primary transition-colors" />
+                    </div>
+                    <input
+                      type="email"
+                      required
+                      placeholder="email@hcmut.edu.vn"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 ml-1">Password</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Lock size={20} className="text-slate-400 group-focus-within:text-primary transition-colors" />
+                    </div>
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="flex items-center gap-2 text-red-500 bg-red-50 p-3 rounded-lg text-sm font-medium animate-pulse">
+                    <AlertCircle size={18} />
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowSSOForm(false)}
+                    className="flex-1 py-3 px-4 border border-slate-200 rounded-xl font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-[2] flex items-center justify-center gap-2 bg-primary text-white py-3 px-4 rounded-xl font-bold shadow-md shadow-primary/20 hover:bg-primary/90 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {loading ? <Loader2 size={20} className="animate-spin" /> : 'Sign In'}
+                  </button>
+                </div>
+              </motion.form>
+            )}
+          </AnimatePresence>
 
           <div className="relative flex items-center justify-center mb-8">
             <div className="flex-grow border-t border-slate-200"></div>
@@ -94,7 +209,7 @@ export default function Login({ onLogin, onVisitor }: LoginProps) {
           </div>
 
           {/* Secondary Action: Visitor */}
-          <button 
+          <button
             onClick={onVisitor}
             className="w-full group cursor-pointer bg-primary/5 hover:bg-primary/10 border border-primary/10 p-6 rounded-2xl transition-all text-left"
           >

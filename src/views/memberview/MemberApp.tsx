@@ -9,11 +9,38 @@ import Support from './screens/Support';
 import Login from './screens/Login';
 import ExitPayment from './screens/ExitPayment';
 
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../../shared/supabase';
+
 export default function MemberApp() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('login');
+  const navigate = useNavigate();
+
+  const handlePostLogin = async (user: any) => {
+    // Fetch profile to check role
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching profile:', error);
+      setCurrentScreen('dashboard');
+      return;
+    }
+
+    if (profile?.role === 'admin') {
+      navigate('/admin');
+    } else if (profile?.role === 'operator') {
+      navigate('/operator');
+    } else {
+      setCurrentScreen('dashboard');
+    }
+  };
 
   if (currentScreen === 'login') {
-    return <Login onLogin={() => setCurrentScreen('dashboard')} onVisitor={() => setCurrentScreen('exit')} />;
+    return <Login onLogin={handlePostLogin} onVisitor={() => setCurrentScreen('exit')} />;
   }
 
   if (currentScreen === 'exit') {
@@ -33,7 +60,15 @@ export default function MemberApp() {
         {currentScreen === 'history' && <History />}
         {currentScreen === 'payments' && <Payments />}
         {currentScreen === 'support' && <Support />}
-        {currentScreen === 'settings' && <Settings onLogout={() => setCurrentScreen('login')} />}
+        {currentScreen === 'settings' && (
+          <Settings
+            onLogout={async () => {
+              await supabase.auth.signOut();
+              setCurrentScreen('login');
+              navigate('/'); // Ensure we are back at root
+            }}
+          />
+        )}
       </main>
     </div>
   );

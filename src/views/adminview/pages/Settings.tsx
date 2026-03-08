@@ -1,6 +1,14 @@
-import React from 'react';
+import { supabase } from '../../../shared/supabase';
+import { useNavigate } from 'react-router-dom';
 
 export const Settings: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
+
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
@@ -9,7 +17,9 @@ export const Settings: React.FC = () => {
       </div>
 
       <div className="space-y-8">
+        {/* Profile Information */}
         <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          {/* ... existing profile section ... */}
           <div className="p-6 border-b border-slate-100">
             <h3 className="font-bold text-lg">Profile Information</h3>
           </div>
@@ -29,23 +39,23 @@ export const Settings: React.FC = () => {
                 <p className="text-xs text-slate-400 mt-1">nguyenduydang225@gmail.com</p>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Full Name</label>
-                <input className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" defaultValue="Nguyen Duy Dang" type="text"/>
+                <input className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" defaultValue="Nguyen Duy Dang" type="text" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Email Address</label>
-                <input className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" defaultValue="nguyenduydang225@gmail.com" type="email"/>
+                <input className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" defaultValue="nguyenduydang225@gmail.com" type="email" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Phone Number</label>
-                <input className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" defaultValue="+84 123 456 789" type="tel"/>
+                <input className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" defaultValue="+84 123 456 789" type="tel" />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Department</label>
-                <input className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" defaultValue="Infrastructure Management" type="text"/>
+                <input className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none" defaultValue="Infrastructure Management" type="text" />
               </div>
             </div>
             <div className="flex justify-end">
@@ -70,11 +80,11 @@ export const Settings: React.FC = () => {
                 </div>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input className="sr-only peer" type="checkbox"/>
+                <input className="sr-only peer" type="checkbox" />
                 <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
-            
+
             <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 bg-slate-200 rounded-lg flex items-center justify-center text-slate-600">
@@ -86,7 +96,7 @@ export const Settings: React.FC = () => {
                 </div>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input defaultChecked className="sr-only peer" type="checkbox"/>
+                <input defaultChecked className="sr-only peer" type="checkbox" />
                 <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
               </label>
             </div>
@@ -127,7 +137,7 @@ export const Settings: React.FC = () => {
               </div>
               <span className="material-symbols-outlined text-slate-400">chevron_right</span>
             </button>
-            
+
             <button className="w-full flex items-center justify-between p-4 rounded-xl bg-white border border-rose-100 hover:border-rose-300 transition-all text-left">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 bg-rose-100 rounded-lg flex items-center justify-center text-rose-600">
@@ -139,6 +149,21 @@ export const Settings: React.FC = () => {
                 </div>
               </div>
               <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">ENABLED</span>
+            </button>
+          </div>
+        </section>
+
+        <section className="bg-rose-50 rounded-2xl border border-rose-100 shadow-sm overflow-hidden mb-12">
+          <div className="p-6 border-b border-rose-100">
+            <h3 className="font-bold text-lg text-rose-900">Account Actions</h3>
+          </div>
+          <div className="p-6">
+            <button
+              onClick={handleLogout}
+              className="w-full p-4 bg-white border border-rose-200 rounded-xl text-rose-600 font-bold hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center gap-2 group"
+            >
+              <span className="material-symbols-outlined group-hover:rotate-180 transition-transform">logout</span>
+              Sign Out from Infrastructure Console
             </button>
           </div>
         </section>
