@@ -27,13 +27,9 @@ export default function MemberApp() {
 
     if (error) {
       console.error('Error fetching profile:', error);
-      alert(`Lỗi khi lấy thông tin quyền: ${error.message}. ID của bạn là ${user.id}`);
       setCurrentScreen('dashboard');
       return;
     }
-
-    console.log('Fetched profile:', profile);
-    alert(`Đăng nhập thành công! Quyền của bạn là: ${profile?.role}`);
 
     if (profile?.role === 'admin') {
       window.location.href = '/admin'; // Force full page reload to avoid router issues
