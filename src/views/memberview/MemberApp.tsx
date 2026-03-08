@@ -17,6 +17,7 @@ export default function MemberApp() {
   const navigate = useNavigate();
 
   const handlePostLogin = async (user: any) => {
+    console.log('Post login started for user:', user);
     // Fetch profile to check role
     const { data: profile, error } = await supabase
       .from('profiles')
@@ -26,14 +27,18 @@ export default function MemberApp() {
 
     if (error) {
       console.error('Error fetching profile:', error);
+      alert(`Lỗi khi lấy thông tin quyền: ${error.message}. ID của bạn là ${user.id}`);
       setCurrentScreen('dashboard');
       return;
     }
 
+    console.log('Fetched profile:', profile);
+    alert(`Đăng nhập thành công! Quyền của bạn là: ${profile?.role}`);
+
     if (profile?.role === 'admin') {
-      navigate('/admin');
+      window.location.href = '/admin'; // Force full page reload to avoid router issues
     } else if (profile?.role === 'operator') {
-      navigate('/operator');
+      window.location.href = '/operator'; // Force full page reload to avoid router issues
     } else {
       setCurrentScreen('dashboard');
     }
