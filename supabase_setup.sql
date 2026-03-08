@@ -41,7 +41,7 @@ DECLARE
     raw_pass TEXT := '123456';
 BEGIN
     -- Xóa cũ để chèn mới
-    DELETE FROM auth.users WHERE email IN ('admin@hcmut.edu.vn', 'operator@hcmut.edu.vn', 'sinhvien@hcmut.edu.vn');
+    DELETE FROM auth.users WHERE email IN ('admin@hcmut.edu.vn', 'operator@hcmut.edu.vn', 'sinhvien@hcmut.edu.vn', 'giangvien@hcmut.edu.vn', 'canbo@hcmut.edu.vn', 'guest@gmail.com');
 
     -- ADMIN
     INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, is_super_admin)
@@ -51,7 +51,7 @@ BEGIN
         now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Hệ Thống Admin"}', 
         now(), now(), '', false
     );
-    INSERT INTO public.profiles (id, email, full_name, role) VALUES (admin_id, 'admin@hcmut.edu.vn', 'Hệ Thống Admin', 'admin');
+    INSERT INTO public.profiles (id, email, full_name, role) VALUES (admin_id, 'admin@hcmut.edu.vn', 'Hệ Thống Admin', 'admin') ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, full_name = EXCLUDED.full_name;
 
     -- OPERATOR
     INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, is_super_admin)
@@ -61,7 +61,7 @@ BEGIN
         now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Nhân Viên Vận Hành"}', 
         now(), now(), '', false
     );
-    INSERT INTO public.profiles (id, email, full_name, role) VALUES (op_id, 'operator@hcmut.edu.vn', 'Nhân Viên Vận Hành', 'operator');
+    INSERT INTO public.profiles (id, email, full_name, role) VALUES (op_id, 'operator@hcmut.edu.vn', 'Nhân Viên Vận Hành', 'operator') ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, full_name = EXCLUDED.full_name;
 
     -- SINH VIÊN
     INSERT INTO auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, is_super_admin)
@@ -71,7 +71,7 @@ BEGIN
         now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Nguyễn Văn A (SV)"}', 
         now(), now(), '', false
     );
-    INSERT INTO public.profiles (id, email, full_name, role) VALUES (sv_id, 'sinhvien@hcmut.edu.vn', 'Nguyễn Văn A (SV)', 'student');
+    INSERT INTO public.profiles (id, email, full_name, role) VALUES (sv_id, 'sinhvien@hcmut.edu.vn', 'Nguyễn Văn A (SV)', 'student') ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, full_name = EXCLUDED.full_name;
 
     -- GIẢNG VIÊN
     DECLARE gv_id UUID := gen_random_uuid();
@@ -83,7 +83,7 @@ BEGIN
             now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Lê Thị B (Giảng Viên)"}', 
             now(), now(), '', false
         );
-        INSERT INTO public.profiles (id, email, full_name, role) VALUES (gv_id, 'giangvien@hcmut.edu.vn', 'Lê Thị B (Giảng Viên)', 'faculty');
+        INSERT INTO public.profiles (id, email, full_name, role) VALUES (gv_id, 'giangvien@hcmut.edu.vn', 'Lê Thị B (Giảng Viên)', 'faculty') ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, full_name = EXCLUDED.full_name;
     END;
 
     -- CÁN BỘ
@@ -96,7 +96,7 @@ BEGIN
             now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Trần Văn C (Cán Bộ)"}', 
             now(), now(), '', false
         );
-        INSERT INTO public.profiles (id, email, full_name, role) VALUES (cb_id, 'canbo@hcmut.edu.vn', 'Trần Văn C (Cán Bộ)', 'staff');
+        INSERT INTO public.profiles (id, email, full_name, role) VALUES (cb_id, 'canbo@hcmut.edu.vn', 'Trần Văn C (Cán Bộ)', 'staff') ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, full_name = EXCLUDED.full_name;
     END;
 
     -- KHÁCH VÃNG LAI
@@ -109,7 +109,7 @@ BEGIN
             now(), '{"provider":"email","providers":["email"]}', '{"full_name":"Khách Vãng Lai"}', 
             now(), now(), '', false
         );
-        INSERT INTO public.profiles (id, email, full_name, role) VALUES (kh_id, 'guest@gmail.com', 'Khách Vãng Lai', 'visitor');
+        INSERT INTO public.profiles (id, email, full_name, role) VALUES (kh_id, 'guest@gmail.com', 'Khách Vãng Lai', 'visitor') ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role, full_name = EXCLUDED.full_name;
     END;
 
 END $$;
