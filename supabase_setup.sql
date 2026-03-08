@@ -17,7 +17,7 @@ EXCEPTION
 END $$;
 
 -- 2. Create a profiles table that extends auth.users
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
     full_name TEXT,
@@ -29,19 +29,18 @@ CREATE TABLE public.profiles (
 -- Enable Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- 3. Create RLS Policies
-
--- Users can read their own profile
+-- 3. Create RLS Policies (Drop first to avoid "already exists" error)
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile" 
 ON public.profiles FOR SELECT 
 USING (auth.uid() = id);
 
--- Users can update their own profile (limited fields)
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile" 
 ON public.profiles FOR UPDATE 
 USING (auth.uid() = id);
 
--- Only admins can view all profiles
+DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
 CREATE POLICY "Admins can view all profiles" 
 ON public.profiles FOR SELECT 
 USING (
@@ -71,7 +70,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 5. Trigger to call the function on signup
+-- 5. Trigger to call the function on signup (Drop first to avoid "already exists" error)
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
@@ -88,8 +88,8 @@ WHERE EXISTS (
 
 -- 7. Specific Role Access Logic (Business logic examples)
 
--- Example: Table for parking slots that only Operators and Admins can manage
-CREATE TABLE public.parking_slots (
+-- Table for parking slots
+CREATE TABLE IF NOT EXISTS public.parking_slots (
     id SERIAL PRIMARY KEY,
     slot_number TEXT UNIQUE NOT NULL,
     is_occupied BOOLEAN DEFAULT FALSE,
@@ -100,12 +100,14 @@ CREATE TABLE public.parking_slots (
 ALTER TABLE public.parking_slots ENABLE ROW LEVEL SECURITY;
 
 -- Everyone can view slots
+DROP POLICY IF EXISTS "Public slots are viewable by everyone" ON public.parking_slots;
 CREATE POLICY "Public slots are viewable by everyone" 
 ON public.parking_slots FOR SELECT 
 TO authenticated, anon
 USING (true);
 
 -- Only Operator and Admin can update slots
+DROP POLICY IF EXISTS "Operators and Admins can update slots" ON public.parking_slots;
 CREATE POLICY "Operators and Admins can update slots" 
 ON public.parking_slots FOR UPDATE 
 USING (
