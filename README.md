@@ -64,6 +64,35 @@ Kết quả sẽ nằm trong thư mục `dist/`.
 - `src/shared/`: (Sắp tới) Chứa các components/utils dùng chung cho cả 3 views.
 - `src/App.tsx`: File cấu hình routing chính cho toàn bộ ứng dụng.
 
+## 🗄️ Database & Phân quyền (Supabase)
+
+Dự án sử dụng **Supabase** để quản lý xác thực (Authentication) và phân quyền (Authorization).
+
+### 👥 Các vai trò người dùng (Roles)
+
+Hệ thống phân quyền dựa trên Email domain `@hcmut.edu.vn` và Metadata:
+
+| Vai trò | Email Domain | Truy cập View |
+| :--- | :--- | :--- |
+| **Student** | `@hcmut.edu.vn` | Member View |
+| **Graduate** | `@hcmut.edu.vn` | Member View |
+| **Doctoral** | `@hcmut.edu.vn` | Member View |
+| **Faculty** | `@hcmut.edu.vn` | Member View |
+| **Staff** | `@hcmut.edu.vn` | Member View |
+| **Visitor** | Tự do | Member View (Hạn chế) |
+| **Parking Operator** | `@hcmut.edu.vn` | Operator View |
+| **System Admin** | `@hcmut.edu.vn` | Admin View |
+
+### 🚀 Thiết lập Database
+
+1. Truy cập [Supabase Console](https://app.supabase.com/).
+2. Tạo project mới.
+3. Mở **SQL Editor** và chạy nội dung file [supabase_setup.sql](./supabase_setup.sql).
+4. File này sẽ tự động:
+   - Tạo bảng `profiles` để lưu thông tin người dùng.
+   - Thiết lập Trigger tự động tạo profile khi User đăng ký qua Auth.
+   - Cấu hình **Row Level Security (RLS)** để bảo mật dữ liệu theo vai trò.
+
 ---
 © 2024 HCMUT Smart Parking Team
 
