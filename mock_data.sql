@@ -81,9 +81,13 @@ BEGIN
             false
         );
 
-        -- Chèn profile tương ứng
+        -- Chèn profile tương ứng (Sử dụng ON CONFLICT vì Trigger đã tự tạo Profile một phần)
         INSERT INTO public.profiles (id, email, full_name, role)
-        VALUES (new_user_id, u_record.email, u_record.full_name, u_record.role);
+        VALUES (new_user_id, u_record.email, u_record.full_name, u_record.role)
+        ON CONFLICT (id) DO UPDATE 
+        SET role = EXCLUDED.role, 
+            full_name = EXCLUDED.full_name,
+            email = EXCLUDED.email;
     END LOOP;
 
 END $$;
