@@ -1,0 +1,5 @@
+{
+  "name": "HCMUT Smart Parking",
+  "description": "A comprehensive smart parking management system for HCMUT campus, featuring real-time tracking, easy payments, and detailed parking history.",
+  "requestFramePermissions": []
+}

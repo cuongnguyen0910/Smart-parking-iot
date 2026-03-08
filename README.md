@@ -1,0 +1,70 @@
+# HCMUT Smart Parking System
+
+Dự án này là một hệ thống quản lý bãi đỗ xe thông minh bao gồm 3 phân hệ chính (Views) được gộp lại từ 3 project riêng biệt.
+
+## 🚀 Cấu trúc dự án
+
+Hệ thống được chia thành 3 giao diện chính:
+- **Member View** (Giao diện người dùng): Mặc định tại `/`
+- **Admin View** (Giao diện quản trị): Truy cập tại `/admin`
+- **Operator View** (Giao diện nhân viên vận hành): Truy cập tại `/operator`
+
+## 🔗 Truy cập các phân hệ (Quick Links)
+
+Khi ứng dụng đang chạy, bạn có thể truy cập nhanh vào các giao diện qua các đường dẫn sau:
+
+- 👤 **Member View:** [http://localhost:3000/](http://localhost:3000/)
+- ⚙️ **Admin View:** [http://localhost:3000/admin](http://localhost:3000/admin)
+- 🛠️ **Operator View:** [http://localhost:3000/operator](http://localhost:3000/operator)
+
+Mọi mã nguồn nằm trong thư mục `src/views/`.
+
+## 🛠 Yêu cầu hệ thống
+
+Trước khi bắt đầu, đảm bảo bạn đã cài đặt:
+- **Node.js** (Phiên bản 18 trở lên)
+- **npm** (Đi kèm với Node.js)
+
+## 📦 Hướng dẫn cài đặt
+
+1. **Clone project và di chuyển vào thư mục dự án:**
+   ```bash
+   cd hcmut-smart-parking
+   ```
+
+2. **Cài đặt các thư viện cần thiết:**
+   ```bash
+   npm install
+   ```
+
+## 💻 Chạy ứng dụng ở môi trường Local
+
+Để chạy ứng dụng ở chế độ phát triển (development):
+
+```bash
+npm run dev
+```
+
+Sau khi chạy lệnh trên, ứng dụng sẽ khả dụng tại: [http://localhost:3000](http://localhost:3000)
+
+## 🏗 Build để triển khai (Production)
+
+Để tạo bản build tối ưu cho việc deploy:
+
+```bash
+npm run build
+```
+
+Kết quả sẽ nằm trong thư mục `dist/`.
+
+## 📁 Tổ chức thư mục chính
+
+- `src/views/`: Chứa mã nguồn của 3 phân hệ (Member, Admin, Operator).
+- `src/assets/`: Nơi lưu trữ logo, hình ảnh dùng chung.
+- `src/shared/`: (Sắp tới) Chứa các components/utils dùng chung cho cả 3 views.
+- `src/App.tsx`: File cấu hình routing chính cho toàn bộ ứng dụng.
+
+---
+© 2024 HCMUT Smart Parking Team
+
+
