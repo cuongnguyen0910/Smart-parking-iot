@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Car, Cpu, AlertTriangle, TrendingUp,
-  RefreshCw, Search, Bell, MoreVertical, LogIn, Eye, LogOut, DollarSign
+  RefreshCw, Search, Bell, MoreVertical, LogIn, Eye, LogOut, DollarSign, QrCode
 } from 'lucide-react';
 import { useProfile } from '../../../shared/hooks/useProfile';
 import { supabase } from '../../../shared/supabase';
@@ -11,6 +11,9 @@ import LostCardModal from './LostCardModal';
 import ManualEntryModal from './ManualEntryModal';
 import GateStatusPanel from './GateStatusPanel';
 import IncidentAlerts from './IncidentAlerts';
+import TicketScannerModal from './TicketScannerModal';
+import GatewayStatusBanner from './GatewayStatusBanner';
+import QuickStatsPanel from './QuickStatsPanel';
 
 export default function Dashboard() {
   const { profile } = useProfile();
@@ -35,6 +38,7 @@ export default function Dashboard() {
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [showLostCardModal, setShowLostCardModal] = useState(false);
   const [showManualEntryModal, setShowManualEntryModal] = useState(false);
+  const [showTicketScannerModal, setShowTicketScannerModal] = useState(false);
   const [manualAction, setManualAction] = useState<'entry' | 'exit'>('entry');
   const [selectedGate, setSelectedGate] = useState<{ id: string; name: string } | null>(null);
 
@@ -142,6 +146,13 @@ export default function Dashboard() {
           />
         </div>
         <div className="flex items-center gap-4">
+          <button
+            onClick={() => setShowTicketScannerModal(true)}
+            title="Scan visitor tickets"
+            className="px-4 py-2 rounded-lg bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 transition-colors flex items-center gap-2"
+          >
+            <QrCode size={16} /> Ticket Scanner
+          </button>
           <button className="relative p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors">
             <Bell size={20} />
             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
@@ -163,6 +174,12 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
+
+      {/* System Status Banner */}
+      <GatewayStatusBanner />
+
+      {/* Quick Action Stats */}
+      <QuickStatsPanel />
 
       {/* KPI Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -347,6 +364,10 @@ export default function Dashboard() {
       </div>
 
       {/* Modals */}
+      <TicketScannerModal
+        isOpen={showTicketScannerModal}
+        onClose={() => setShowTicketScannerModal(false)}
+      />
       <OverrideGateModal
         isOpen={showOverrideModal}
         onClose={() => setShowOverrideModal(false)}
