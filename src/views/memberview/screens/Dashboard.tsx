@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Bell,
   Calendar,
@@ -15,7 +15,33 @@ import { motion } from 'motion/react';
 import { useProfile } from '../../../shared/hooks/useProfile';
 
 export default function Dashboard() {
-  const { profile } = useProfile();
+  const { profile, refreshProfile } = useProfile();
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [currentViewDate, setCurrentViewDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const daysInMonth = new Date(currentViewDate.getFullYear(), currentViewDate.getMonth() + 1, 0).getDate();
+  const firstDayOfMonth = new Date(currentViewDate.getFullYear(), currentViewDate.getMonth(), 1).getDay();
+
+  const handlePrevMonth = () => {
+    setCurrentViewDate(new Date(currentViewDate.getFullYear(), currentViewDate.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentViewDate(new Date(currentViewDate.getFullYear(), currentViewDate.getMonth() + 1, 1));
+  };
+
+  const handleDateSelect = (day: number) => {
+    setSelectedDate(new Date(currentViewDate.getFullYear(), currentViewDate.getMonth(), day));
+    setShowCalendar(false);
+  };
+
+  const displayDate = selectedDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -35,10 +61,62 @@ export default function Dashboard() {
             <Bell size={20} />
             <span className="absolute top-3 right-3 size-2 bg-red-500 rounded-full border-2 border-white"></span>
           </button>
-          <button className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all">
-            <Calendar size={18} className="text-primary" />
-            <span className="text-sm font-bold text-slate-700">Oct 24, 2023</span>
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => setShowCalendar(!showCalendar)}
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all"
+            >
+              <Calendar size={18} className="text-primary" />
+              <span className="text-sm font-bold text-slate-700">{displayDate}</span>
+            </button>
+
+            {showCalendar && (
+              <div className="absolute top-full mt-2 right-0 bg-white border border-slate-200 shadow-xl rounded-2xl p-4 z-50 w-72">
+                <div className="flex justify-between items-center mb-4">
+                  <button onClick={handlePrevMonth} className="text-slate-400 hover:text-primary p-1">&lt;</button>
+                  <span className="font-bold text-sm text-slate-700">
+                    {currentViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </span>
+                  <button onClick={handleNextMonth} className="text-slate-400 hover:text-primary p-1">&gt;</button>
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-400 mb-2">
+                  <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-center text-sm font-medium text-slate-700">
+                  {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+                    <div key={`empty-${i}`} className="p-1"></div>
+                  ))}
+                  {Array.from({ length: daysInMonth }).map((_, i) => {
+                    const day = i + 1;
+                    const isSelected = 
+                      selectedDate.getDate() === day &&
+                      selectedDate.getMonth() === currentViewDate.getMonth() &&
+                      selectedDate.getFullYear() === currentViewDate.getFullYear();
+                    const isToday = 
+                      new Date().getDate() === day &&
+                      new Date().getMonth() === currentViewDate.getMonth() &&
+                      new Date().getFullYear() === currentViewDate.getFullYear();
+
+                    return (
+                      <div 
+                        key={day} 
+                        onClick={() => handleDateSelect(day)}
+                        className={`p-1.5 rounded-lg cursor-pointer transition-colors ${
+                          isSelected 
+                            ? 'bg-primary text-white font-bold shadow-sm' 
+                            : isToday
+                            ? 'bg-primary/10 text-primary font-bold hover:bg-slate-100'
+                            : 'hover:bg-slate-100'
+                        }`}
+                      >
+                        {day}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -48,7 +126,7 @@ export default function Dashboard() {
         <div className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 text-white shadow-xl shadow-primary/20">
           <div className="relative z-10">
             <p className="text-blue-100 text-xs font-bold uppercase tracking-wider mb-1">Current Balance</p>
-            <h3 className="text-3xl font-black mb-4">250,000 <span className="text-lg font-medium">VND</span></h3>
+            <h3 className="text-3xl font-black mb-4">{profile?.balance?.toLocaleString() || '0'} <span className="text-lg font-medium">VND</span></h3>
             <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md w-fit px-3 py-1 rounded-full text-xs font-bold">
               <TrendingUp size={14} />
               <span>+15% from last month</span>
@@ -70,6 +148,23 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-2 text-slate-600">
             <span className="text-sm font-bold">B2 Building - Slot #42</span>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
+            <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">In Progress</span>
+          </div>
+
+          <div className="flex items-center gap-4 mt-6">
+            <button 
+              className="flex-1 py-3 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 transition-colors"
+              onClick={() => {
+                // Simulate ending session and deducting balance
+                alert("Session ended. Balance deducted.");
+                refreshProfile();
+              }}
+            >
+              End Session Early
+            </button>
           </div>
         </div>
 

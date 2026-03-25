@@ -33,7 +33,7 @@ Trước khi bắt đầu, đảm bảo bạn đã cài đặt:
    ```
 
 2. **Cài đặt các thư viện cần thiết:**
-   ```bash
+   ```bash\
    npm install
    ```
 
