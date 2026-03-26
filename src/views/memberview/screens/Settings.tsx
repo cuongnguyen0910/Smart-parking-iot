@@ -14,7 +14,7 @@ import {
   ChevronRight,
   Settings as SettingsIcon
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { useProfile } from '../../../shared/hooks/useProfile';
 
 interface SettingsProps {

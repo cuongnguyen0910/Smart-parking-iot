@@ -11,7 +11,7 @@ import {
   History,
   Building2
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { useProfile } from '../../../shared/hooks/useProfile';
 import { supabase } from '../../../shared/supabase';
 import { Screen } from '../types';

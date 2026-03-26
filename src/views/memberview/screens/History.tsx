@@ -7,7 +7,7 @@ import {
   ChevronLeft, 
   ChevronRight 
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 export default function History() {
   const [currentPage, setCurrentPage] = useState(1);

@@ -11,7 +11,7 @@ import {
   Calendar,
   RefreshCw
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 
 export default function Payments() {
   const [vehicles, setVehicles] = React.useState([
