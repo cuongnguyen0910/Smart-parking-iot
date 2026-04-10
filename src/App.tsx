@@ -6,6 +6,8 @@ import AdminApp from './views/adminview/AdminApp';
 import OperatorApp from './views/operatorview/OperatorApp';
 import Login from './shared/components/Login';
 
+import VisitorApp from './views/visitorview/VisitorApp';
+
 function App() {
   const { profile, loading, fetchError } = useProfile();
   const [showVisitorView, setShowVisitorView] = useState(false);
@@ -18,6 +20,11 @@ function App() {
         <p className="mt-8 text-slate-500 font-bold tracking-widest uppercase text-xs">HCMUT SMART PARKING</p>
       </div>
     );
+  }
+
+  // Visitor View (Unauthenticated)
+  if (!profile && showVisitorView) {
+    return <VisitorApp />;
   }
 
   // Handle Shared Login (If not logged in and not choosing visitor mode)
