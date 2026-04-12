@@ -29,10 +29,12 @@ import OverrideGateModal from './OverrideGateModal';
 
 export default function ManualHandling({ 
   pendingAction,
-  clearPendingAction
+  clearPendingAction,
+  onReturnToDashboard
 }: {
   pendingAction?: { type: 'lost_card' | 'manual_entry' | 'manual_exit' | 'override_gate' | 'manual_handling' | null; data?: any };
   clearPendingAction?: () => void;
+  onReturnToDashboard?: () => void;
 }) {
   // Form State
   const [searchQuery, setSearchQuery] = useState('');
@@ -519,22 +521,41 @@ export default function ManualHandling({
             </div>
 
             {/* Modal Footer */}
-            <div className="sticky bottom-0 px-6 py-4 bg-slate-50 border-t border-slate-200 flex gap-3 justify-end">
-              <button
-                onClick={() => setShowManualHandlingModal(false)}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 font-semibold hover:bg-slate-100 transition-colors"
-              >
-                Cancel
-              </button>
+            <div className="sticky bottom-0 px-6 py-4 bg-slate-50 border-t border-slate-200 flex gap-3 justify-between">
               <button
                 onClick={() => {
-                  alert(`✓ ${activeModalTab.replace('_', ' ').toUpperCase()} operation submitted`);
                   setShowManualHandlingModal(false);
                 }}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 rounded-lg border border-red-200 text-red-600 font-semibold hover:bg-red-50 transition-colors flex items-center gap-2"
               >
-                Confirm & Submit
+                ✕ Close
               </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    alert(`✓ ${activeModalTab.replace('_', ' ').toUpperCase()} operation submitted successfully`);
+                    // Reset form and close
+                    setPlate('');
+                    setStudentId('');
+                    setSupervisorCode('');
+                    setActiveModalTab('lost_card');
+                    setShowManualHandlingModal(false);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                  ✓ Submit & Close
+                </button>
+                <button
+                  onClick={() => {
+                    alert(`✓ ${activeModalTab.replace('_', ' ').toUpperCase()} operation submitted successfully`);
+                    setShowManualHandlingModal(false);
+                    if (onReturnToDashboard) onReturnToDashboard();
+                  }}
+                  className="px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors flex items-center gap-2"
+                >
+                  ✓ Submit & Return
+                </button>
+              </div>
             </div>
           </div>
         </div>

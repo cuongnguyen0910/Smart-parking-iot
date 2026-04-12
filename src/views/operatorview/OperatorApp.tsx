@@ -22,6 +22,11 @@ export default function OperatorApp() {
     setActiveTab('manual-handling');
   };
 
+  const handleReturnToDashboard = () => {
+    setPendingManualAction({ type: null });
+    setActiveTab('dashboard');
+  };
+
   useEffect(() => {
     if (!loading && !fetchError && (!profile || profile.role !== 'operator')) {
       const timer = setTimeout(() => {
@@ -91,6 +96,7 @@ export default function OperatorApp() {
           <ManualHandling 
             pendingAction={pendingManualAction}
             clearPendingAction={() => setPendingManualAction({ type: null })}
+            onReturnToDashboard={handleReturnToDashboard}
           />
         );
       case 'settings':
