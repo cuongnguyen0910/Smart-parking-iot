@@ -4,7 +4,7 @@ import Dashboard from './components/Dashboard';
 import GateControl from './components/GateControl';
 import ManualHandling from './components/ManualHandling';
 import Settings from './components/Settings';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useProfile } from '../../shared/hooks/useProfile';
 
 export default function OperatorApp() {
