@@ -85,9 +85,9 @@ export default function GateStatusPanel({ onRefresh, onOverride }: GateStatusPan
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold">Gate Status</h2>
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-slate-500">Gate status and control information</p>
         <button
           onClick={onRefresh}
           className="text-primary text-sm font-semibold hover:underline flex items-center gap-1"

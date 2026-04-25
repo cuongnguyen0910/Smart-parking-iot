@@ -176,7 +176,7 @@ export default function GatewayStatusBanner() {
             ))}
           </div>
           <p className="text-xs text-slate-500 pt-2">
-            💡 If gateway remains offline &gt; 5 minutes, system will enter fallback mode and queue updates for sync upon reconnection.
+            If gateway remains offline &gt; 5 minutes, system will enter fallback mode and queue updates for sync upon reconnection.
           </p>
         </div>
       )}
