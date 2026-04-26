@@ -5,22 +5,22 @@ import { Globe, GraduationCap, Settings, ShieldCheck } from 'lucide-react';
 const roles = [
   {
     title: 'Visitors',
-    description: 'Instant entry for campus guests with QR-based payments and real-time navigation.',
+    description: 'Instant entry for campus guests with QR-based payments, real-time navigation, and flexible hourly rates.',
     icon: Globe,
   },
   {
     title: 'Members',
-    description: 'Students and Faculty enjoy priority zones, digital permits, and monthly billing.',
+    description: 'Students and Faculty enjoy priority zones, digital permit management, and seamless monthly billing integration.',
     icon: GraduationCap,
   },
   {
     title: 'Operators',
-    description: 'Monitor gate status, manage occupancy, and respond to incidents in real-time.',
+    description: 'Real-time gate status monitoring, occupancy management, and rapid incident response tools.',
     icon: Settings,
   },
   {
     title: 'Administrators',
-    description: 'Data-driven insights, revenue analytics, and system-wide policy management.',
+    description: 'Comprehensive data analytics, revenue reporting, and system-wide policy management for campus mobility.',
     icon: ShieldCheck,
   },
 ];

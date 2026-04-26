@@ -1,9 +1,11 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, MapPin, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import heroImage from '../../../assets/images/hcmut_building.jpg';
 
 export default function Hero() {
+  const navigate = useNavigate();
   return (
     <section className="relative min-h-[90vh] flex items-center px-8 max-w-7xl mx-auto overflow-hidden pt-20">
       <div className="grid md:grid-cols-2 gap-12 items-center z-10">
@@ -24,11 +26,16 @@ export default function Hero() {
             Experience the future of HCMUT parking. Seamless IoT integration, real-time slot availability, and automated access for the smartest technical community at Bach Khoa.
           </p>
           <div className="flex flex-wrap gap-4">
-            <button className="px-8 py-4 bg-primary text-on-primary rounded-xl font-bold shadow-2xl shadow-primary/40 flex items-center gap-2 hover:opacity-90 transition-all">
-              Reserve a Slot
+            <button 
+              onClick={() => navigate('/login')}
+              className="px-8 py-4 bg-primary text-on-primary rounded-xl font-bold shadow-2xl shadow-primary/40 flex items-center gap-2 hover:shadow-primary/60 hover:-translate-y-1 transition-all active:scale-95"
+            >
+              Enter Portal
               <ArrowRight size={20} />
             </button>
-            <button className="px-8 py-4 bg-surface-container-highest text-on-surface rounded-xl font-bold hover:bg-surface-container-high transition-all">
+            <button 
+              className="px-8 py-4 bg-surface-container-highest text-on-surface rounded-xl font-bold hover:bg-surface-container-high hover:-translate-y-1 transition-all active:scale-95 border border-slate-200"
+            >
               Live Map
             </button>
           </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../../../shared/hooks/useProfile';
 import { supabase } from '../../../shared/supabase';
+import { recordAuditLog } from '../../../shared/utils/audit';
 
 export const Settings: React.FC = () => {
   const { profile, logout } = useProfile();
@@ -29,14 +30,27 @@ export const Settings: React.FC = () => {
     setSaveMessage({ text: '', type: '' });
 
     try {
-      // NOTE: Updating actual email usually requires supabase.auth.updateUser.
-      // We will only update full_name in the profiles table here.
       const { error } = await supabase
         .from('profiles')
-        .update({ full_name: fullName })
+        .update({ 
+          full_name: fullName,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', profile.id);
 
       if (error) throw error;
+
+      // Record Audit Log for security tracking
+      recordAuditLog({
+        action: 'UPDATE_PROFILE',
+        entityType: 'USER_PROFILE',
+        entityId: profile.id,
+        severity: 'LOW',
+        metadata: { 
+          old_name: profile.full_name, 
+          new_name: fullName 
+        }
+      });
 
       setSaveMessage({ text: 'Profile updated successfully!', type: 'success' });
       setTimeout(() => setSaveMessage({ text: '', type: '' }), 3000);

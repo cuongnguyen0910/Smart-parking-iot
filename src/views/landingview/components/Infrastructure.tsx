@@ -60,12 +60,13 @@ export default function Infrastructure() {
             </p>
             <ul className="space-y-4 mt-8">
               {[
-                'Smart ultrasonic sensors for every slot',
-                'AI-powered license plate recognition (ALPR)',
-                'Centrally managed gate control unit',
+                'Smart ultrasonic sensors for real-time slot tracking',
+                'AI-powered license plate recognition (ALPR) at gates',
+                'NFC-based access control for faculty and students',
+                'Redundant cloud sync with 99.9% uptime guarantee',
               ].map((item, i) => (
                 <li key={i} className="flex items-center gap-3">
-                  <CheckCircle2 size={24} className="text-accent-cyan" />
+                  <CheckCircle2 size={24} className="text-accent-cyan shrink-0" />
                   <span className="font-medium text-slate-200">{item}</span>
                 </li>
               ))}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../shared/supabase';
 import { motion, AnimatePresence } from 'motion/react';
+import { recordAuditLog } from '../../../shared/utils/audit';
 
 interface SignageDisplay {
   id: string;
@@ -28,7 +29,11 @@ export const Signage: React.FC = () => {
   const [displays, setDisplays] = useState<SignageDisplay[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeDisplayId, setActiveDisplayId] = useState<string>('LED-01');
-  const [formState, setFormState] = useState<Partial<SignageDisplay>>({});
+  const [formState, setFormState] = useState<Partial<SignageDisplay>>({
+    header_text: '',
+    marquee_message: '',
+    theme_color: 'orange'
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [isFullscreenPreview, setIsFullscreenPreview] = useState(false);
 
@@ -148,6 +153,28 @@ export const Signage: React.FC = () => {
         status: 'CLOSED',
         is_emergency: true
       })));
+    }
+  };
+
+  const handleDeleteDisplay = async (id: string, display_id: string) => {
+    if (!window.confirm(`Are you sure you want to decommission and delete ${display_id}? This action cannot be undone.`)) return;
+
+    try {
+      const { error } = await supabase.from('signage_displays').delete().eq('id', id);
+      if (error) throw error;
+
+      recordAuditLog({
+        action: 'DELETE_SIGNAGE',
+        entityType: 'SIGNAGE',
+        entityId: display_id,
+        severity: 'MEDIUM',
+        metadata: { display_id }
+      });
+
+      fetchSignage();
+    } catch (e) {
+      console.error('Failed to delete display:', e);
+      alert('Delete failed. Check console for details.');
     }
   };
 
@@ -295,8 +322,18 @@ export const Signage: React.FC = () => {
                       </span>
                       {row.is_emergency && <span className="ml-2 text-[10px] text-rose-600 animate-pulse font-black">EMERGENCY</span>}
                     </td>
-                    <td className="px-4 py-4 text-right">
+                    <td className="px-4 py-4 text-right flex justify-end gap-2">
                       <button className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-bold transition-colors">Edit Content</button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteDisplay(row.id, row.display_id);
+                        }}
+                        className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded transition-colors"
+                        title="Delete Display"
+                      >
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -314,7 +351,7 @@ export const Signage: React.FC = () => {
               <div className="space-y-2">
                 <label className="text-[10px] font-black tracking-widest text-slate-500 uppercase block">Header Text</label>
                 <input
-                  value={formState.header_text}
+                  value={formState.header_text || ''}
                   onChange={e => setFormState({ ...formState, header_text: e.target.value.toUpperCase() })}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-800 outline-none focus:border-[#ea580c] transition-colors uppercase"
                 />
@@ -338,7 +375,7 @@ export const Signage: React.FC = () => {
                   </button>
                 </label>
                 <textarea
-                  value={formState.marquee_message}
+                  value={formState.marquee_message || ''}
                   onChange={e => setFormState({ ...formState, marquee_message: e.target.value.toUpperCase() })}
                   rows={4}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 outline-none focus:border-[#ea580c] transition-colors uppercase font-mono resize-none leading-relaxed"

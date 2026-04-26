@@ -20,13 +20,7 @@ export default function Navbar() {
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate('/login')}
-            className="px-5 py-2 text-sm font-bold text-on-surface-variant hover:opacity-80 scale-95 active:scale-90 transition-all duration-300"
-          >
-            Login
-          </button>
-          <button 
-            onClick={() => navigate('/login')}
-            className="px-6 py-2.5 text-sm font-bold bg-primary text-on-primary rounded-xl shadow-lg shadow-primary/20 hover:opacity-80 scale-95 active:scale-90 transition-all duration-300"
+            className="px-6 py-2.5 text-sm font-bold bg-primary text-on-primary rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
           >
             Portal
           </button>

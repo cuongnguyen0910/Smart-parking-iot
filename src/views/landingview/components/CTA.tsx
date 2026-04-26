@@ -1,7 +1,9 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 
 export default function CTA() {
+  const navigate = useNavigate();
   return (
     <section className="py-24 px-8">
       <motion.div 
@@ -17,8 +19,11 @@ export default function CTA() {
           <h2 className="text-4xl md:text-6xl font-headline font-extrabold tracking-tight">Ready to modernize your parking experience?</h2>
           <p className="text-xl text-blue-100 leading-relaxed opacity-90">Join thousands of students and faculty members who have already switched to the smart way of campus life.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <button className="px-10 py-5 bg-white text-primary rounded-2xl font-extrabold text-lg shadow-xl hover:scale-105 transition-transform active:scale-95">
-              Access Student Portal
+            <button 
+              onClick={() => navigate('/login')}
+              className="px-10 py-5 bg-white text-primary rounded-2xl font-extrabold text-lg shadow-xl hover:scale-105 transition-transform active:scale-95"
+            >
+              Access Portal Now
             </button>
             <button className="px-10 py-5 bg-primary-dark text-white border border-white/20 rounded-2xl font-extrabold text-lg hover:bg-white/10 transition-colors">
               Contact Support

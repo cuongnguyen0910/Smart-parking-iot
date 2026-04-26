@@ -21,8 +21,12 @@ export default function Footer() {
           <a className="text-slate-600 hover:text-primary transition-colors" href="#">Support</a>
         </div>
         <div className="flex gap-4">
-          <a className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all shadow-sm" href="#">
-            <Share2 size={18} />
+          <a 
+            className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-primary hover:bg-primary hover:text-white hover:-translate-y-1 transition-all shadow-sm group" 
+            href="#"
+            title="Share"
+          >
+            <Share2 size={18} className="group-hover:scale-110 transition-transform" />
           </a>
         </div>
       </div>
