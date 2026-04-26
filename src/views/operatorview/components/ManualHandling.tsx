@@ -37,7 +37,9 @@ export default function ManualHandling() {
       type: 'bike' as const,
       duration: '47 min',
       fee: 5000,
-      paymentStatus: 'unpaid'
+      paymentStatus: 'unpaid',
+      waitTime: '47 min',
+      priority: 'high' as const
     },
     { 
       id: '2',
@@ -50,7 +52,9 @@ export default function ManualHandling() {
       type: 'car' as const,
       duration: '12 min',
       fee: 10000,
-      paymentStatus: 'unpaid'
+      paymentStatus: 'unpaid',
+      waitTime: '12 min',
+      priority: 'medium' as const
     },
   ]);
 
@@ -123,6 +127,20 @@ export default function ManualHandling() {
       </section>
 
       <div className="space-y-6">
+          {/* Quick Reference Tips */}
+          <section className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl shadow-sm border border-blue-200 p-5">
+            <div className="flex gap-3">
+              <HelpCircle size={20} className="text-blue-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-sm text-blue-900 mb-2">Handling Pending Cases</p>
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  <strong>Lost Card:</strong> Driver has lost parking card. Release gate or issue temporary pass after fee collection.
+                  <strong className="block mt-1">Scan Failed:</strong> Card reader error. Verify vehicle info and collect payment before release.
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* Active Exception Sessions */}
           <section className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center">
@@ -137,7 +155,7 @@ export default function ManualHandling() {
                   <tr className="bg-slate-50">
                     <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Vehicle</th>
                     <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Entry Time</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Status</th>
+                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Wait / Status</th>
                     <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Action</th>
                   </tr>
                 </thead>
@@ -161,17 +179,22 @@ export default function ManualHandling() {
                           <p className="text-xs text-slate-400">{session.gate}</p>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold ${
-                            session.status === 'LOST_CARD' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
-                          }`}>
-                            <span className={`size-1.5 rounded-full ${session.status === 'LOST_CARD' ? 'bg-red-600' : 'bg-blue-600'}`}></span>
-                            {session.status === 'LOST_CARD' ? 'LOST CARD' : 'SCAN FAILED'}
-                          </span>
+                          <div className="space-y-1.5">
+                            <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold ${
+                              session.status === 'LOST_CARD' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+                            }`}>
+                              <span className={`size-1.5 rounded-full ${session.status === 'LOST_CARD' ? 'bg-red-600' : 'bg-blue-600'}`}></span>
+                              {session.status === 'LOST_CARD' ? 'LOST CARD' : 'SCAN FAILED'}
+                            </div>
+                            <p className={`text-xs font-bold ${session.priority === 'high' ? 'text-orange-600' : 'text-slate-500'}`}>
+                              Wait: {session.waitTime}
+                            </p>
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <button 
                             onClick={() => handleReleaseGate(session.vehicle, session.id)}
-                            className="text-primary font-bold text-sm hover:underline"
+                            className="text-primary font-bold text-sm hover:underline hover:text-primary/80 transition-colors"
                           >
                             {session.status === 'LOST_CARD' ? 'Release Gate' : 'Mark Paid'}
                           </button>
@@ -182,9 +205,9 @@ export default function ManualHandling() {
                     <tr>
                       <td colSpan={4} className="px-6 py-12 text-center">
                         <div className="flex flex-col items-center justify-center gap-2">
-                          <Search size={32} className="text-slate-300" />
-                          <p className="text-slate-500 font-medium">No pending cases found</p>
-                          <p className="text-xs text-slate-400">Search results will appear here</p>
+                          <CheckCircle size={32} className="text-emerald-300" />
+                          <p className="text-slate-500 font-medium">No pending cases</p>
+                          <p className="text-xs text-slate-400">All vehicles have exited or paid</p>
                         </div>
                       </td>
                     </tr>

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Car, Cpu, AlertTriangle, TrendingUp,
-  RefreshCw, Search, Bell, MoreVertical, LogIn, Eye, LogOut, DollarSign, Plus, ChevronDown, ChevronUp,
-  AlertCircle, Zap, Activity, Gauge
+  Car, Cpu, AlertTriangle,
+  RefreshCw, Search, Bell, Plus, ChevronDown, ChevronUp,
+  AlertCircle, Activity, Gauge
 } from 'lucide-react';
 import { useProfile } from '../../../shared/hooks/useProfile';
 import { supabase } from '../../../shared/supabase';
@@ -10,7 +10,6 @@ import LiveVehicles from './LiveVehicles';
 import OverrideGateModal from './OverrideGateModal';
 import LostCardModal from './LostCardModal';
 import ManualEntryModal from './ManualEntryModal';
-import IncidentAlerts from './IncidentAlerts';
 import GatewayStatusBanner from './GatewayStatusBanner';
 import QuickStatsPanel from './QuickStatsPanel';
 
@@ -18,6 +17,8 @@ interface Gate {
   id: string;
   name: string;
   zone: string;
+  laneType: 'two-wheel' | 'four-wheel';
+  direction: 'entry' | 'exit';
   status: 'Online' | 'Alert' | 'Offline';
   img: string;
   recTime?: string;
@@ -27,12 +28,10 @@ interface Gate {
 
 export default function Dashboard({ 
   onManualAction,
-  gates,
-  onGatesChange
+  gates
 }: { 
   onManualAction?: (actionType: 'lost_card' | 'manual_entry' | 'manual_exit' | 'override_gate' | 'manual_handling', actionData?: any) => void;
   gates?: Gate[];
-  onGatesChange?: (gates: Gate[]) => void;
 }) {
   const { profile } = useProfile();
 
@@ -43,16 +42,38 @@ export default function Dashboard({
   
   // Occupied Slots Table
   const [occupiedList, setOccupiedList] = useState<any[]>([]);
-  const [showAllSlots, setShowAllSlots] = useState(false);
   const [showOccupiedSlots, setShowOccupiedSlots] = useState(false);
-  const [showSystemInterventions, setShowSystemInterventions] = useState(false);
-  // Slot Menu State
-  const [openSlotMenuId, setOpenSlotMenuId] = useState<string | null>(null);
-  const [slotMenuPosition, setSlotMenuPosition] = useState({ top: 0, left: 0 });
   
   // Card Stock & Transactions
-  const [cardStockRemaining, setCardStockRemaining] = useState(42);
+  const CARD_STOCK_THRESHOLDS = {
+    CRITICAL: 5,
+    WARNING: 10,
+    HEALTHY: 100
+  };
+  const [cardStockRemaining, setCardStockRemaining] = useState(20);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  
+  // Card Stock Status Helper
+  const getCardStockStatus = () => {
+    if (cardStockRemaining <= 0) {
+      return { level: 'critical', label: 'CRITICAL - OUT OF STOCK', color: 'red' };
+    }
+    if (cardStockRemaining <= CARD_STOCK_THRESHOLDS.CRITICAL) {
+      return { level: 'critical', label: 'CRITICAL - OUT OF STOCK SOON', color: 'red' };
+    } else if (cardStockRemaining < CARD_STOCK_THRESHOLDS.WARNING) {
+      return { level: 'warning', label: 'WARNING - LOW STOCK', color: 'yellow' };
+    } else if (cardStockRemaining < 20) {
+      return { level: 'notice', label: 'NOTICE - MONITOR STOCK', color: 'amber' };
+    }
+    return { level: 'healthy', label: 'Stock Level: Healthy', color: 'green' };
+  };
+  const cardStockStatus = getCardStockStatus();
+
+  // Alerts & Operations Data
+  const [pendingCases] = useState([
+    { id: 1, type: 'LOST_CARD', vehicle: '59P1-998.23', time: '47 min' },
+    { id: 2, type: 'SCAN_FAIL', vehicle: '51H-123.45', time: '12 min' },
+  ]);
   
   // Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,8 +85,7 @@ export default function Dashboard({
   const [showManualHandlingModal, setShowManualHandlingModal] = useState(false);
   
   // Collapsible Sections
-  const [showQuickActions, setShowQuickActions] = useState(false);
-  const [showIncidents, setShowIncidents] = useState(true);
+  const [showAlertsOperations, setShowAlertsOperations] = useState(true);
   
   // Issue Temp Card Modal (renamed to Visitor Pass)
   const [showVisitorPassModal, setShowVisitorPassModal] = useState(false);
@@ -126,18 +146,11 @@ export default function Dashboard({
       .from('parking_slots')
       .select('zone, is_occupied');
 
-    // 4. Danh sách slot đang đỗ (cho Recent Logs)
-    let query = supabase
+    // 4. Danh sách slot đang đỗ
+    const { data: occupiedData } = await supabase
       .from('parking_slots')
       .select('slot_number, zone')
       .eq('is_occupied', true);
-    
-    // Limit to 4 unless showAllSlots is true
-    if (!showAllSlots) {
-      query = query.limit(4);
-    }
-    
-    const { data: occupiedData } = await query;
 
     setTotalSlots(total || 0);
     setOccupiedSlots(occupied || 0);
@@ -175,9 +188,68 @@ export default function Dashboard({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [showAllSlots]);
+  }, []);
 
   const occupancyRate = totalSlots > 0 ? Math.round((occupiedSlots / totalSlots) * 100) : 0;
+  const occupiedByZone = zones.reduce<Record<string, number>>((acc, slot) => {
+    if (!slot.is_occupied) return acc;
+    const zone = slot.zone || 'Unknown';
+    acc[zone] = (acc[zone] || 0) + 1;
+    return acc;
+  }, {});
+  const occupiedZoneEntries = Object.entries(occupiedByZone).sort(([a], [b]) => a.localeCompare(b));
+  const gateList = gates || [];
+  const totalGates = gateList.length;
+  const gateOfflineCount = gateList.filter(g => g.status === 'Offline').length;
+  const gateAlertCount = gateList.filter(g => g.status === 'Alert').length;
+  const gateOnlineCount = gateList.filter(g => g.status !== 'Offline').length;
+  const pendingCasesCount = pendingCases.length;
+  const systemHealth = totalGates > 0 ? Math.round((gateOnlineCount / totalGates) * 100) : 100;
+
+  const gateIncidents = gateList.flatMap((gate) => {
+    if (gate.status === 'Offline') {
+      return [{
+        id: `offline-${gate.id}`,
+        type: 'gate_offline',
+        severity: 'high',
+        message: `${gate.name} (Gate ${gate.id}) is offline`,
+        gate: gate.id,
+        time: 'Live status'
+      }];
+    }
+
+    if (gate.status === 'Alert') {
+      return [{
+        id: `alert-${gate.id}`,
+        type: 'gate_alert',
+        severity: 'medium',
+        message: `${gate.name} (Gate ${gate.id}) alert: ${gate.alert || 'Operator attention required'}`,
+        gate: gate.id,
+        time: 'Live status'
+      }];
+    }
+
+    return [];
+  });
+
+  const occupancyIncidents = occupiedZoneEntries
+    .map(([zone, occupied]) => {
+      const zoneTotal = zones.filter(z => z.zone === zone).length;
+      const rate = zoneTotal > 0 ? Math.round((occupied / zoneTotal) * 100) : 0;
+      return { zone, rate };
+    })
+    .filter(({ rate }) => rate >= 85)
+    .map(({ zone, rate }) => ({
+      id: `occupancy-${zone}`,
+      type: 'high_occupancy',
+      severity: 'medium',
+      message: `Zone ${zone} high occupancy (${rate}%)`,
+      zone,
+      time: 'Live status'
+    }));
+
+  const activeIncidents = [...gateIncidents, ...occupancyIncidents];
+  const incidentCount = activeIncidents.length;
 
   // Notification Handlers
   const dismissNotification = (id: string) => {
@@ -260,6 +332,69 @@ export default function Dashboard({
 
   return (
     <div className="space-y-8">
+      {/* CRITICAL ALERT BANNER - Shows at top if stock is critical */}
+      {cardStockStatus.level === 'critical' && (
+        <div className="bg-red-600 text-white rounded-2xl p-4 flex items-center gap-4 shadow-lg shadow-red-600/30 animate-pulse border-l-4 border-red-700">
+          <AlertTriangle size={28} className="shrink-0" />
+          <div className="flex-1">
+            <p className="font-bold text-lg">CRITICAL ALERT: Parking Cards Stock</p>
+            <p className="text-sm mt-1">
+              {cardStockRemaining <= 0 ? (
+                <>System is <span className="font-bold">OUT OF STOCK</span>. Issue of new temporary cards is blocked until restock.</>
+              ) : (
+                <>Only <span className="font-bold">{cardStockRemaining} cards</span> remaining. Immediate restock required to maintain operations!</>
+              )}
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              alert(`URGENT Restock request sent! Current stock: ${cardStockRemaining} cards.`);
+              setNotifications([{
+                id: Date.now().toString(),
+                type: 'critical',
+                title: 'URGENT: Card Stock Critical',
+                message: cardStockRemaining <= 0
+                  ? 'CRITICAL: OUT OF STOCK. Restock requested immediately.'
+                  : `CRITICAL: Only ${cardStockRemaining} cards left! Restock requested.`,
+                timestamp: new Date(),
+                read: false
+              }, ...notifications]);
+            }}
+            className="px-4 py-2 bg-white text-red-600 rounded-lg font-bold hover:bg-red-50 whitespace-nowrap transition-colors"
+          >
+            Send Urgent Request
+          </button>
+        </div>
+      )}
+
+      {/* WARNING ALERT BANNER - Shows at top if stock is low */}
+      {cardStockStatus.level === 'warning' && (
+        <div className="bg-yellow-500 text-white rounded-2xl p-4 flex items-center gap-4 shadow-lg shadow-yellow-500/30 border-l-4 border-yellow-600">
+          <AlertTriangle size={28} className="shrink-0" />
+          <div className="flex-1">
+            <p className="font-bold text-lg">WARNING: Parking Cards Stock Low</p>
+            <p className="text-sm mt-1">
+              <span className="font-bold">{cardStockRemaining} cards</span> remaining. Please restock soon to avoid service interruption.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              alert(`Restock request sent! Current stock: ${cardStockRemaining} cards.`);
+              setNotifications([{
+                id: Date.now().toString(),
+                type: 'warning',
+                title: 'Card Stock Low',
+                message: `Only ${cardStockRemaining} cards remaining. Restock request sent to procurement.`,
+                timestamp: new Date(),
+                read: false
+              }, ...notifications]);
+            }}
+            className="px-4 py-2 bg-white text-yellow-700 rounded-lg font-bold hover:bg-yellow-50 whitespace-nowrap transition-colors"
+          >
+            Send Restock Request
+          </button>
+        </div>
+      )}
       {/* Topbar */}
       <header className="flex items-center justify-between mb-8">
         <div className="relative w-full max-w-xl">
@@ -273,44 +408,37 @@ export default function Dashboard({
           />
         </div>
         <div className="flex items-center gap-4">
-          <div className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${
-            cardStockRemaining < 5 
-              ? 'bg-red-50 border-red-200' 
-              : cardStockRemaining < 10 
-              ? 'bg-yellow-50 border-yellow-200' 
+          {/* Card Stock Alert Badge with Status Indicator */}
+          <div className={`px-4 py-2 rounded-lg border flex items-center gap-3 font-bold animate-pulse ${
+            cardStockStatus.level === 'critical' 
+              ? 'bg-red-50 border-red-300 shadow-lg shadow-red-100' 
+              : cardStockStatus.level === 'warning' 
+              ? 'bg-yellow-50 border-yellow-300 shadow-lg shadow-yellow-100' 
+              : cardStockStatus.level === 'notice'
+              ? 'bg-amber-50 border-amber-300'
               : 'bg-purple-50 border-purple-200'
           }`}>
             <div className="text-sm">
-              <p className={`text-xs font-medium ${
-                cardStockRemaining < 5 
-                  ? 'text-red-600' 
-                  : cardStockRemaining < 10 
-                  ? 'text-yellow-600' 
-                  : 'text-slate-500'
-              }`}>Card Stock</p>
+              <p className={`text-xs font-bold uppercase tracking-wider ${
+                cardStockStatus.level === 'critical' 
+                  ? 'text-red-700' 
+                  : cardStockStatus.level === 'warning' 
+                  ? 'text-yellow-700' 
+                  : cardStockStatus.level === 'notice'
+                  ? 'text-amber-700'
+                  : 'text-slate-600'
+              }`}>{cardStockStatus.label}</p>
               <p className={`text-lg font-bold ${
-                cardStockRemaining < 5 
+                cardStockStatus.level === 'critical' 
                   ? 'text-red-600' 
-                  : cardStockRemaining < 10 
+                  : cardStockStatus.level === 'warning' 
                   ? 'text-yellow-600' 
+                  : cardStockStatus.level === 'notice'
+                  ? 'text-amber-600'
                   : 'text-purple-600'
-              }`}>{cardStockRemaining} {cardStockRemaining < 5 ? '⚠' : cardStockRemaining < 10 ? '!' : ''}</p>
+              }`}>{cardStockRemaining} Cards</p>
             </div>
           </div>
-          {cardStockRemaining < 10 && (
-            <button 
-              onClick={() => alert('Restock request sent to procurement team')}
-              className={`px-3 py-2 rounded-lg font-semibold text-sm transition-colors ${
-                cardStockRemaining < 5 
-                  ? 'bg-red-600 text-white hover:bg-red-700' 
-                  : 'bg-yellow-600 text-white hover:bg-yellow-700'
-              }`}
-              title="Request urgent restock"
-            >
-              Request Restock
-            </button>
-          )}
-          
           <button 
             onClick={() => setShowVisitorPassModal(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-sm shadow-blue-600/20"
@@ -437,7 +565,7 @@ export default function Dashboard({
               <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Gate Busy</p>
               <p className="text-2xl font-bold text-slate-800">{occupiedSlots}</p>
             </div>
-            <div className="text-4xl font-bold text-red-100">🚗</div>
+            <Car className="text-red-200" size={34} />
           </div>
           <p className="text-xs text-slate-500 mt-2">Currently occupied</p>
         </div>
@@ -447,7 +575,7 @@ export default function Dashboard({
               <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Gate Idle</p>
               <p className="text-2xl font-bold text-slate-800">{totalSlots - occupiedSlots}</p>
             </div>
-            <div className="text-4xl font-bold text-green-100">✓</div>
+            <Cpu className="text-emerald-200" size={34} />
           </div>
           <p className="text-xs text-slate-500 mt-2">Available slots</p>
         </div>
@@ -457,7 +585,7 @@ export default function Dashboard({
               <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Occupancy Rate</p>
               <p className="text-2xl font-bold text-slate-800">{occupancyRate}%</p>
             </div>
-            <div className="text-4xl font-bold text-blue-100">📊</div>
+            <Gauge className="text-blue-200" size={34} />
           </div>
           <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-2">
             <div 
@@ -471,26 +599,7 @@ export default function Dashboard({
       {/* System Status Banner */}
       <GatewayStatusBanner gates={gates} />
 
-      {/* Incidents & Alerts - Collapsible */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <button
-          onClick={() => setShowIncidents(!showIncidents)}
-          className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors border-b border-slate-100"
-        >
-          <div className="flex items-center gap-3">
-            <AlertCircle className="text-orange-600" size={20} />
-            <h2 className="text-lg font-bold">Incidents & Alerts</h2>
-          </div>
-          {showIncidents ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </button>
-        {showIncidents && (
-          <div className="p-6 pt-0">
-            <IncidentAlerts onRefresh={fetchData} />
-          </div>
-        )}
-      </div>
-
-      {/* Live Zone Occupancy - MOVED BEFORE QUICK ACTION ITEMS */}
+      {/* Live Zone Occupancy */}
       <div>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -541,21 +650,303 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* Quick Action Stats - Collapsible */}
+      {/* Alerts & Operations - Merged Section with Quick Status */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <button
-          onClick={() => setShowQuickActions(!showQuickActions)}
-          className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors border-b border-slate-100"
-        >
-          <div className="flex items-center gap-3">
-            <Gauge className="text-green-600" size={20} />
-            <h2 className="text-lg font-bold">Quick Action Items</h2>
+        {/* Header with Quick Summary - Always Visible */}
+        <div className="p-6 border-b border-slate-100">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="text-red-600" size={20} />
+              <h2 className="text-lg font-bold">Alerts & Operations</h2>
+            </div>
+            <button
+              onClick={() => setShowAlertsOperations(!showAlertsOperations)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              {showAlertsOperations ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              <span className="text-xs font-semibold text-slate-600">
+                {showAlertsOperations ? 'Hide' : 'Show'}
+              </span>
+            </button>
           </div>
-          {showQuickActions ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </button>
-        {showQuickActions && (
-          <div className="p-6 pt-0">
-            <QuickStatsPanel />
+          
+          {/* Quick Status Bar - Shows Without Expanding */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className={`p-3 rounded-lg border text-center ${
+              incidentCount > 0 
+                ? 'bg-red-50 border-red-200' 
+                : 'bg-emerald-50 border-emerald-200'
+            }`}>
+              <p className="text-xs font-bold text-slate-600 uppercase">Alerts</p>
+              <p className={`text-2xl font-bold ${
+                incidentCount > 0 ? 'text-red-600' : 'text-emerald-600'
+              }`}>{incidentCount}</p>
+            </div>
+            <div className={`p-3 rounded-lg border text-center ${
+              gateOfflineCount > 0 
+                ? 'bg-amber-50 border-amber-200' 
+                : 'bg-emerald-50 border-emerald-200'
+            }`}>
+              <p className="text-xs font-bold text-slate-600 uppercase">Gates</p>
+              <p className={`text-2xl font-bold ${
+                gateOfflineCount > 0 ? 'text-amber-600' : 'text-emerald-600'
+              }`}>{gateOnlineCount}/{totalGates || 0}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Online</p>
+            </div>
+            <div className={`p-3 rounded-lg border text-center ${
+              pendingCasesCount > 0 
+                ? 'bg-orange-50 border-orange-200' 
+                : 'bg-emerald-50 border-emerald-200'
+            }`}>
+              <p className="text-xs font-bold text-slate-600 uppercase">Pending</p>
+              <p className={`text-2xl font-bold ${
+                pendingCasesCount > 0 ? 'text-orange-600' : 'text-emerald-600'
+              }`}>{pendingCasesCount}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Cases</p>
+            </div>
+            <div className={`p-3 rounded-lg border text-center ${
+              cardStockRemaining < 10 
+                ? 'bg-red-50 border-red-200' 
+                : 'bg-emerald-50 border-emerald-200'
+            }`}>
+              <p className="text-xs font-bold text-slate-600 uppercase">Card Stock</p>
+              <p className={`text-2xl font-bold ${
+                cardStockRemaining <= CARD_STOCK_THRESHOLDS.CRITICAL ? 'text-red-600' :
+                cardStockRemaining < CARD_STOCK_THRESHOLDS.WARNING ? 'text-orange-600' :
+                cardStockRemaining < 20 ? 'text-amber-600' :
+                'text-emerald-600'
+              }`}>{cardStockRemaining}</p>
+              <p className={`text-[10px] font-bold uppercase tracking-wider mt-1 ${
+                cardStockRemaining <= CARD_STOCK_THRESHOLDS.CRITICAL ? 'text-red-600' :
+                cardStockRemaining < CARD_STOCK_THRESHOLDS.WARNING ? 'text-orange-600' :
+                cardStockRemaining < 20 ? 'text-amber-600' :
+                'text-emerald-600'
+              }`}>
+                {cardStockRemaining <= CARD_STOCK_THRESHOLDS.CRITICAL ? 'CRITICAL' :
+                 cardStockRemaining < CARD_STOCK_THRESHOLDS.WARNING ? 'WARNING' :
+                 cardStockRemaining < 20 ? 'MONITOR' :
+                 'HEALTHY'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Expandable Content */}
+        {showAlertsOperations && (
+          <div className="p-6 space-y-6 border-t border-slate-100">
+            {/* Incident Type Pills */}
+            <div>
+              <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Alert Breakdown</h3>
+              <div className="flex flex-wrap gap-2">
+                {gateOfflineCount > 0 && (
+                  <div className="px-3 py-1.5 bg-red-100 text-red-700 rounded-full text-xs font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-red-600 rounded-full"></span>
+                    Gate Offline ({gateOfflineCount})
+                  </div>
+                )}
+                {gateAlertCount > 0 && (
+                  <div className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-yellow-600 rounded-full"></span>
+                    Gate Alert ({gateAlertCount})
+                  </div>
+                )}
+                {activeIncidents.filter(i => i.type === 'high_occupancy').length > 0 && (
+                  <div className="px-3 py-1.5 bg-orange-100 text-orange-700 rounded-full text-xs font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-orange-600 rounded-full"></span>
+                    High Occupancy ({activeIncidents.filter(i => i.type === 'high_occupancy').length})
+                  </div>
+                )}
+                {incidentCount === 0 && (
+                  <div className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-emerald-600 rounded-full"></span>
+                    All Systems Normal
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Active Incidents List */}
+            <div>
+              <h3 className="text-sm font-bold text-slate-600 mb-3 flex items-center gap-2">
+                <AlertCircle size={16} className="text-orange-600" />
+                Active Incidents ({incidentCount})
+              </h3>
+              {incidentCount > 0 ? (
+                <div className="space-y-2">
+                  {activeIncidents.map((incident) => (
+                    <div key={incident.id} className={`p-3 rounded-lg border flex items-start justify-between ${
+                      incident.severity === 'high' 
+                        ? 'bg-red-50 border-red-200' 
+                        : 'bg-yellow-50 border-yellow-200'
+                    }`}>
+                      <div className="flex-1">
+                        <p className={`text-sm font-bold ${
+                          incident.severity === 'high' ? 'text-red-800' : 'text-yellow-800'
+                        }`}>{incident.message}</p>
+                        <p className="text-xs text-slate-500 mt-1">{incident.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200 text-center">
+                  <p className="text-sm font-semibold text-emerald-700">No active incidents</p>
+                </div>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-slate-100"></div>
+
+            {/* System Status Section */}
+            <div>
+              <h3 className="text-sm font-bold text-slate-600 mb-3 flex items-center gap-2">
+                <Gauge size={16} className="text-green-600" />
+                System Health: {systemHealth}% Operational
+              </h3>
+              <QuickStatsPanel />
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-slate-100"></div>
+
+            {/* Manual Operations Section */}
+            <div>
+              <h3 className="text-sm font-bold text-slate-600 mb-4 flex items-center gap-2">
+                <AlertTriangle size={16} className="text-red-600" />
+                Manual Operations
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Lost Card Operation - Shows context */}
+                <button
+                  onClick={() => setShowLostCardModal(true)}
+                  className="p-4 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-all hover:shadow-md text-left group"
+                  title="Report lost/damaged parking card and issue temporary pass"
+                >
+                  <div className="flex items-start gap-2 mb-2">
+                    <AlertCircle className="text-red-700" size={20} />
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-red-800 group-hover:text-red-900">Lost Card Report</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                          pendingCasesCount > 0 
+                            ? 'bg-red-200 text-red-700' 
+                            : 'bg-red-100 text-red-600'
+                        }`}>
+                          {pendingCasesCount} pending
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-red-600 mt-2">Report lost/damaged card & issue temporary pass</p>
+                  <p className="text-[10px] text-red-500 mt-2 font-semibold">Fee: ₫20,000</p>
+                </button>
+
+                {/* Emergency Override - Links to GateControl */}
+                <button
+                  onClick={() => {
+                    if (gateOfflineCount > 0) {
+                      alert('Gate issues detected. Switch to Gate Control tab to manually override gates.');
+                    } else {
+                      setShowEmergencyOverrideModal(true);
+                    }
+                  }}
+                  className="p-4 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-all hover:shadow-md text-left group relative"
+                  title="Override gate during emergency only - requires supervisor code"
+                >
+                  <div className="flex items-start gap-2 mb-2">
+                    <AlertTriangle className="text-orange-700" size={20} />
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-orange-800 group-hover:text-orange-900">Emergency Override</p>
+                      {gateOfflineCount > 0 && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-200 text-orange-700">
+                            {gateOfflineCount} gates down
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-orange-600 mt-2">Force gate open in emergencies only (fire, obstruction, safety)</p>
+                  <p className="text-[10px] text-orange-500 mt-2 font-semibold">Requires supervisor code</p>
+                  {gateOfflineCount > 0 && (
+                    <p className="text-[10px] text-orange-600 mt-2 font-bold">Use GateControl tab for manual operations</p>
+                  )}
+                </button>
+
+                {/* Manual Exit - Shows card stock with threshold warnings */}
+                <button
+                  onClick={() => {
+                    if (cardStockRemaining <= CARD_STOCK_THRESHOLDS.CRITICAL) {
+                      alert(
+                        cardStockRemaining <= 0
+                          ? 'OUT OF STOCK: No cards remaining. Request restock before issuing new cards.'
+                          : `CRITICAL: Only ${cardStockRemaining} cards remaining! Request restock before issuing new cards.`
+                      );
+                    } else if (cardStockRemaining < CARD_STOCK_THRESHOLDS.WARNING) {
+                      alert(`WARNING: Card stock is low (${cardStockRemaining} remaining). Monitor closely.`);
+                    }
+                    setShowManualHandlingModal(true);
+                  }}
+                  className={`p-4 rounded-lg hover:shadow-md text-left group border transition-all ${
+                    cardStockRemaining <= CARD_STOCK_THRESHOLDS.CRITICAL
+                      ? 'bg-red-50 border-red-200 hover:bg-red-100'
+                      : cardStockRemaining < CARD_STOCK_THRESHOLDS.WARNING
+                      ? 'bg-orange-50 border-orange-200 hover:bg-orange-100'
+                      : cardStockRemaining < 20
+                      ? 'bg-amber-50 border-amber-200 hover:bg-amber-100'
+                      : 'bg-amber-50 border-amber-200 hover:bg-amber-100'
+                  }`}
+                  title="Create manual exit when card reader or plate scanner fails"
+                >
+                  <div className="flex items-start gap-2 mb-2">
+                    <Activity className="text-amber-700" size={20} />
+                    <div className="flex-1">
+                      <p className={`text-sm font-bold ${
+                        cardStockRemaining <= CARD_STOCK_THRESHOLDS.CRITICAL
+                          ? 'text-red-800 group-hover:text-red-900'
+                          : cardStockRemaining < CARD_STOCK_THRESHOLDS.WARNING
+                          ? 'text-orange-800 group-hover:text-orange-900'
+                          : 'text-amber-800 group-hover:text-amber-900'
+                      }`}>Manual Exit</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                          cardStockRemaining <= CARD_STOCK_THRESHOLDS.CRITICAL
+                            ? 'bg-red-200 text-red-700'
+                            : cardStockRemaining < CARD_STOCK_THRESHOLDS.WARNING
+                            ? 'bg-orange-200 text-orange-700'
+                            : cardStockRemaining < 20
+                            ? 'bg-amber-200 text-amber-700'
+                            : 'bg-amber-200 text-amber-700'
+                        }`}>
+                          {cardStockRemaining <= CARD_STOCK_THRESHOLDS.CRITICAL ? 'Critical' : cardStockRemaining < CARD_STOCK_THRESHOLDS.WARNING ? 'Warning' : cardStockRemaining < 20 ? 'Monitor' : 'Healthy'} Stock: {cardStockRemaining}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className={`text-xs mt-2 ${
+                    cardStockRemaining <= CARD_STOCK_THRESHOLDS.CRITICAL
+                      ? 'text-red-600'
+                      : cardStockRemaining < CARD_STOCK_THRESHOLDS.WARNING
+                      ? 'text-orange-600'
+                      : 'text-amber-600'
+                  }`}>Create exit when card reader or plate scanner fails</p>
+                  <p className={`text-[10px] font-semibold mt-2 ${
+                    cardStockRemaining <= CARD_STOCK_THRESHOLDS.CRITICAL
+                      ? 'text-red-500'
+                      : cardStockRemaining < CARD_STOCK_THRESHOLDS.WARNING
+                      ? 'text-orange-500'
+                      : 'text-amber-500'
+                  }`}>Charge: Motorbike ₫5k / Car ₫10k</p>
+                  {cardStockRemaining <= CARD_STOCK_THRESHOLDS.CRITICAL && (
+                    <p className="text-[10px] text-red-600 mt-2 font-bold">CRITICAL: Request restock immediately!</p>
+                  )}
+                  {cardStockRemaining < CARD_STOCK_THRESHOLDS.WARNING && cardStockRemaining > CARD_STOCK_THRESHOLDS.CRITICAL && (
+                    <p className="text-[10px] text-orange-600 mt-2 font-bold">WARNING: Low stock - monitor closely!</p>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -566,165 +957,63 @@ export default function Dashboard({
         onSelectVehicle={(vehicle) => console.log('Selected vehicle:', vehicle)}
       />
 
-      {/* System Interventions - Quick Actions */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <button
-          onClick={() => setShowSystemInterventions(!showSystemInterventions)}
-          className="w-full p-6 flex items-center justify-between hover:bg-slate-50 transition-colors border-b border-slate-100"
-        >
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="text-red-600" size={20} />
-            <h2 className="text-lg font-bold">System Interventions</h2>
-          </div>
-          {showSystemInterventions ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </button>
-        {showSystemInterventions && (
-          <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button
-              onClick={() => setShowLostCardModal(true)}
-              className="p-4 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-all hover:shadow-md text-left group"
-              title="Report lost/damaged parking card and issue temporary pass"
-            >
-              <div className="flex items-start gap-2 mb-2">
-                <div className="text-xl">🔑</div>
-                <p className="text-sm font-bold text-red-800 group-hover:text-red-900">Lost Card Report</p>
-              </div>
-              <p className="text-xs text-red-600 mt-1">Report lost/damaged card & issue temporary pass</p>
-              <p className="text-[10px] text-red-500 mt-2 font-semibold">Fee: ₫20,000</p>
-            </button>
-            <button
-              onClick={() => setShowEmergencyOverrideModal(true)}
-              className="p-4 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-all hover:shadow-md text-left group"
-              title="Override gate during emergency only - requires supervisor code"
-            >
-              <div className="flex items-start gap-2 mb-2">
-                <div className="text-xl">🚨</div>
-                <p className="text-sm font-bold text-orange-800 group-hover:text-orange-900">Emergency Override</p>
-              </div>
-              <p className="text-xs text-orange-600 mt-1">Force gate open in emergencies only (fire, obstruction, safety)</p>
-              <p className="text-[10px] text-orange-500 mt-2 font-semibold">Requires supervisor code</p>
-            </button>
-            <button
-              onClick={() => setShowManualHandlingModal(true)}
-              className="p-4 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-all hover:shadow-md text-left group"
-              title="Create manual exit when card reader or plate scanner fails"
-            >
-              <div className="flex items-start gap-2 mb-2">
-                <div className="text-xl">📤</div>
-                <p className="text-sm font-bold text-amber-800 group-hover:text-amber-900">Manual Exit</p>
-              </div>
-              <p className="text-xs text-amber-600 mt-1">Create exit when card reader or plate scanner fails</p>
-              <p className="text-[10px] text-amber-500 mt-2 font-semibold">Charge: Motorbike ₫5k / Car ₫10k</p>
-            </button>
-          </div>
-        )}
-      </div>
+      {/* Compact Occupied Slots Summary */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <button 
           onClick={() => setShowOccupiedSlots(!showOccupiedSlots)}
-          className="w-full p-6 border-b border-slate-100 flex items-center justify-between hover:bg-slate-50 transition-colors"
+          className="w-full p-5 border-b border-slate-100 flex items-center justify-between hover:bg-slate-50 transition-colors"
         >
           <div className="flex items-center gap-3">
             <Car className="text-slate-600" size={20} />
-            <h2 className="text-lg font-bold">Currently Occupied Slots</h2>
+            <div>
+              <h2 className="text-lg font-bold text-left">Occupied Slots Overview</h2>
+              <p className="text-xs text-slate-500 text-left">Compact infrastructure snapshot by zone</p>
+            </div>
             <span className="px-2 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
               {occupiedList.length} slots
             </span>
           </div>
           {showOccupiedSlots ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
         </button>
-        
+
+        <div className="px-5 py-4 border-b border-slate-100">
+          <div className="flex flex-wrap gap-2">
+            {occupiedZoneEntries.length > 0 ? (
+              occupiedZoneEntries.map(([zone, count]) => (
+                <span
+                  key={zone}
+                  className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold"
+                >
+                  Zone {zone}
+                  <span className="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">{count}</span>
+                </span>
+              ))
+            ) : (
+              <span className="text-xs text-slate-400">No occupied zones right now</span>
+            )}
+          </div>
+        </div>
+
         {showOccupiedSlots && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider font-bold">
-                  <th className="px-6 py-4">Slot Number</th>
-                  <th className="px-6 py-4">Zone</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {occupiedList.length > 0 ? (
-                  occupiedList.map((slot, i) => (
-                    <tr key={i} className="hover:bg-slate-50 transition-colors text-sm">
-                      <td className="px-6 py-4 font-bold text-slate-800">{slot.slot_number}</td>
-                      <td className="px-6 py-4 text-slate-500">{slot.zone}</td>
-                      <td className="px-6 py-4">
-                        <span className="flex items-center gap-1.5 text-emerald-600">
-                          <LogIn size={14} /> Occupied
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={(e) => {
-                            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                            setSlotMenuPosition({
-                              top: rect.bottom + window.scrollY,
-                              left: rect.left + window.scrollX
-                            });
-                            setOpenSlotMenuId(openSlotMenuId === slot.slot_number ? null : slot.slot_number);
-                          }}
-                          className="text-slate-400 hover:text-primary transition-colors"
-                        >
-                          <MoreVertical size={18} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan={4} className="p-8 text-center text-slate-400">No occupied slots right now</td></tr>
-                )}
-              </tbody>
-            </table>
+          <div className="px-5 pb-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {occupiedList.length > 0 ? (
+                occupiedList.map((slot, i) => (
+                  <div
+                    key={i}
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 flex items-center justify-between"
+                  >
+                    <p className="text-sm font-bold text-slate-800">{slot.slot_number}</p>
+                    <span className="text-xs font-semibold text-slate-500">Zone {slot.zone}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-400">No occupied slots right now</p>
+              )}
+            </div>
           </div>
         )}
       </div>
-
-      {/* Floating Slot Action Menu - Outside Container */}
-      {openSlotMenuId && (
-        <div 
-          className="fixed w-48 bg-white rounded-lg shadow-xl border border-slate-200 z-50 py-1"
-          style={{
-            top: `${slotMenuPosition.top}px`,
-            left: `${slotMenuPosition.left}px`
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              alert(`View details for slot ${openSlotMenuId}`);
-              setOpenSlotMenuId(null);
-            }}
-            className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors"
-          >
-            <Eye size={16} /> View Details
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onManualAction) onManualAction('manual_exit', { slot: openSlotMenuId });
-              setOpenSlotMenuId(null);
-            }}
-            className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-sm text-orange-600 transition-colors"
-          >
-            <LogOut size={16} /> Force Exit
-          </button>
-          <div className="border-t border-slate-100 my-1"></div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              alert(`Payment Status for Slot ${openSlotMenuId}`);
-              setOpenSlotMenuId(null);
-            }}
-            className="w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-600 transition-colors"
-          >
-            <DollarSign size={16} /> Check Payment
-          </button>
-        </div>
-      )}
 
       {/* Recent Transactions - LIMITED TO 5 ROWS */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -799,14 +1088,6 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* Close menu backdrop - Outside Container */}
-      {openSlotMenuId && (
-        <div 
-          className="fixed inset-0 z-40"
-          onClick={() => setOpenSlotMenuId(null)}
-        />
-      )}
-
       {/* Modals */}
       <OverrideGateModal
         isOpen={showOverrideModal}
@@ -819,7 +1100,18 @@ export default function Dashboard({
         isOpen={showManualHandlingModal}
         onClose={() => setShowManualHandlingModal(false)}
         onSuccess={(data) => {
-          // Add transaction to recent transactions
+          // Add transaction to recent transactions list (max 7 items)
+          const newTransaction = {
+            id: recentTransactions.length + 1,
+            plate: data.plate,
+            exitTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            cardType: 'Manual Exit',
+            vehicleType: data.vehicleType === 'motorbike' ? 'Motorbike' : 'Car',
+            amount: `₫${data.fee.toLocaleString()}`,
+            status: 'Paid'
+          };
+          setRecentTransactions([newTransaction, ...recentTransactions.slice(0, 6)]);
+          
           if (onManualAction) onManualAction('manual_exit', data);
           setShowManualHandlingModal(false);
         }}

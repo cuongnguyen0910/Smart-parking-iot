@@ -23,6 +23,8 @@ interface Gate {
   id: string;
   name: string;
   zone: string;
+  laneType: 'two-wheel' | 'four-wheel';
+  direction: 'entry' | 'exit';
   status: 'Online' | 'Alert' | 'Offline';
   img: string;
   recTime?: string;
@@ -56,8 +58,10 @@ export default function GateControl({ gates: externalGates, onGatesChange }: Gat
   const [localGates, setLocalGates] = useState<Gate[]>([
     { 
       id: 'A', 
-      name: 'Main Entrance', 
-      zone: 'North Campus', 
+      name: 'Motorbike Entry Lane', 
+      zone: 'Motorbike Lot', 
+      laneType: 'two-wheel',
+      direction: 'entry',
       status: 'Online', 
       img: 'https://picsum.photos/seed/gateA_live/600/400',
       recTime: '10:45:22',
@@ -65,8 +69,10 @@ export default function GateControl({ gates: externalGates, onGatesChange }: Gat
     },
     { 
       id: 'B', 
-      name: 'Staff Parking', 
-      zone: 'East Tower', 
+      name: 'Motorbike Exit Lane', 
+      zone: 'Motorbike Lot', 
+      laneType: 'two-wheel',
+      direction: 'exit',
       status: 'Alert', 
       img: 'https://picsum.photos/seed/gateB_live/600/400',
       alert: 'Obstruction Detected',
@@ -74,16 +80,20 @@ export default function GateControl({ gates: externalGates, onGatesChange }: Gat
     },
     { 
       id: 'C', 
-      name: 'Library Exit', 
-      zone: 'Central Hub', 
+      name: 'Car Entry Lane', 
+      zone: 'Car Lot', 
+      laneType: 'four-wheel',
+      direction: 'entry',
       status: 'Offline', 
       img: '',
       lockState: 'closed'
     },
     { 
       id: 'D', 
-      name: 'Dormitory Entry', 
-      zone: 'Residential', 
+      name: 'Car Exit Lane', 
+      zone: 'Car Lot', 
+      laneType: 'four-wheel',
+      direction: 'exit',
       status: 'Online', 
       img: 'https://picsum.photos/seed/gateD_live/600/400',
       lockState: 'open'
@@ -118,10 +128,10 @@ export default function GateControl({ gates: externalGates, onGatesChange }: Gat
   const getFilteredGates = () => {
     if (gateFilter === 'all') return gates;
     if (gateFilter === 'entrance') {
-      return gates.filter(g => g.name.toLowerCase().includes('entrance') || g.name.toLowerCase().includes('entry') || g.id === 'A' || g.id === 'D');
+      return gates.filter(g => g.direction === 'entry');
     }
     if (gateFilter === 'exit') {
-      return gates.filter(g => g.name.toLowerCase().includes('exit') || g.id === 'C');
+      return gates.filter(g => g.direction === 'exit');
     }
     return gates;
   };
@@ -273,7 +283,7 @@ export default function GateControl({ gates: externalGates, onGatesChange }: Gat
                 : 'text-slate-500 hover:text-primary'
             }`}
           >
-            Entrance ({gates.filter(g => g.name.toLowerCase().includes('entrance') || g.name.toLowerCase().includes('entry') || g.id === 'A' || g.id === 'D').length})
+            Entrance ({gates.filter(g => g.direction === 'entry').length})
           </button>
           <button 
             onClick={() => setGateFilter('exit')}
@@ -283,7 +293,7 @@ export default function GateControl({ gates: externalGates, onGatesChange }: Gat
                 : 'text-slate-500 hover:text-primary'
             }`}
           >
-            Exit ({gates.filter(g => g.name.toLowerCase().includes('exit') || g.id === 'C').length})
+            Exit ({gates.filter(g => g.direction === 'exit').length})
           </button>
         </div>
       </header>
@@ -315,7 +325,9 @@ export default function GateControl({ gates: externalGates, onGatesChange }: Gat
                 <div className="p-4 flex items-center justify-between border-b border-slate-100">
                   <div>
                     <h4 className="font-bold text-sm">{gate.name} - Gate {gate.id}</h4>
-                    <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Zone: {gate.zone}</p>
+                    <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                      {gate.zone} • {gate.laneType === 'two-wheel' ? '2-WHEEL' : '4-WHEEL'} • {gate.direction.toUpperCase()}
+                    </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     {/* Gate Connection Status */}
@@ -337,35 +349,30 @@ export default function GateControl({ gates: externalGates, onGatesChange }: Gat
                   </div>
                 </div>
 
-                <div className="relative aspect-video bg-slate-900 flex items-center justify-center">
+                <div className="relative aspect-video bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
                   {gate.status === 'Offline' ? (
                     <div className="text-center">
                       <Signal className="text-slate-400 mx-auto mb-2" size={48} />
                       <p className="text-[10px] font-bold text-slate-400 uppercase">Connection Lost</p>
                     </div>
                   ) : (
-                    <>
-                      <img 
-                        src={gate.img} 
-                        alt={gate.name} 
-                        className={`w-full h-full object-cover opacity-80 ${gate.status === 'Alert' ? 'brightness-50' : ''}`}
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-t from-black/40 via-transparent to-transparent">
-                        <Video className="text-white/60 mb-2" size={40} />
-                        <p className="text-white text-xs font-bold uppercase tracking-widest">Live CCTV Feed</p>
+                    <div className="w-full h-full relative flex items-center justify-center bg-gradient-to-t from-black/40 via-transparent to-transparent">
+                      <div className="text-center">
+                        <Video className="text-white/60 mx-auto mb-3" size={48} />
+                        <p className="text-white text-sm font-bold uppercase tracking-widest">Live CCTV Feed</p>
+                        <p className="text-white/50 text-[10px] mt-1">Camera Not Connected</p>
                       </div>
                       {gate.recTime && (
                         <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 rounded text-[10px] text-white font-mono">REC {gate.recTime}</div>
                       )}
                       {gate.alert && (
-                        <div className="absolute inset-0 flex items-center justify-center border-4 border-amber-400">
+                        <div className="absolute inset-0 flex items-center justify-center border-4 border-amber-400 bg-black/30">
                           <div className="bg-amber-400 text-white px-3 py-1 rounded-full text-[10px] font-bold animate-pulse uppercase tracking-widest">
                             {gate.alert}
                           </div>
                         </div>
                       )}
-                    </>
+                    </div>
                   )}
                 </div>
 
@@ -402,6 +409,19 @@ export default function GateControl({ gates: externalGates, onGatesChange }: Gat
                       <Lock size={18} /> Emergency Lock
                     </button>
                   </div>
+
+                  {gate.status === 'Alert' && gate.alert && (
+                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-xs font-bold text-amber-700 mb-1">Alert: {gate.alert}</p>
+                      <p className="text-[10px] text-amber-600">Check camera first. Clear obstruction before opening gate.</p>
+                    </div>
+                  )}
+                  {gate.status === 'Offline' && (
+                    <div className="mt-4 p-3 bg-slate-100 border border-slate-300 rounded-lg">
+                      <p className="text-xs font-bold text-slate-700 mb-1">Connection Lost</p>
+                      <p className="text-[10px] text-slate-600">Manual override requires emergency lock confirmation.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -424,27 +444,35 @@ export default function GateControl({ gates: externalGates, onGatesChange }: Gat
               </button>
             </div>
             <div className="p-4 flex-1 space-y-5 overflow-y-auto max-h-[600px]">
-              {history.map((item, i) => (
-                <div key={i} className="flex gap-3 group">
-                  <div className={`size-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                    item.type === 'open' ? 'bg-primary/10 text-primary' :
-                    item.type === 'lock' ? 'bg-red-100 text-red-600' :
-                    'bg-slate-100 text-slate-600'
-                  }`}>
-                    {item.type === 'open' ? <DoorOpen size={14} /> : 
-                     item.type === 'lock' ? <Lock size={14} /> : 
-                     <DoorClosed size={14} />}
+              {history.length > 0 ? (
+                history.map((item, i) => (
+                  <div key={i} className="flex gap-3 group">
+                    <div className={`size-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                      item.type === 'open' ? 'bg-primary/10 text-primary' :
+                      item.type === 'lock' ? 'bg-red-100 text-red-600' :
+                      'bg-slate-100 text-slate-600'
+                    }`}>
+                      {item.type === 'open' ? <DoorOpen size={14} /> : 
+                       item.type === 'lock' ? <Lock size={14} /> : 
+                       <DoorClosed size={14} />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold leading-tight group-hover:text-primary transition-colors truncate">{item.action}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{item.user}</p>
+                      {item.reason && (
+                        <p className="text-[10px] text-slate-400 italic truncate">Reason: {item.reason}</p>
+                      )}
+                      <span className="text-[10px] font-mono text-slate-400 block mt-1">{item.time}</span>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold leading-tight group-hover:text-primary transition-colors truncate">{item.action}</p>
-                    <p className="text-[10px] text-slate-500 truncate">{item.user}</p>
-                    {item.reason && (
-                      <p className="text-[10px] text-slate-400 italic truncate">Reason: {item.reason}</p>
-                    )}
-                    <span className="text-[10px] font-mono text-slate-400 block mt-1">{item.time}</span>
-                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center h-40 text-center">
+                  <History size={32} className="text-slate-300 mb-2" />
+                  <p className="text-sm font-medium text-slate-500">No override history yet</p>
+                  <p className="text-xs text-slate-400">Gate actions will appear here</p>
                 </div>
-              ))}
+              )}
             </div>
             <div className="p-4 bg-slate-50 border-t border-slate-100">
               <button className="w-full py-2.5 bg-white border border-slate-200 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-100 transition-colors">

@@ -11,6 +11,8 @@ interface Gate {
   id: string;
   name: string;
   zone: string;
+  laneType: 'two-wheel' | 'four-wheel';
+  direction: 'entry' | 'exit';
   status: 'Online' | 'Alert' | 'Offline';
   img: string;
   recTime?: string;
@@ -26,8 +28,10 @@ export default function OperatorApp() {
   const [gates, setGates] = useState<Gate[]>([
     { 
       id: 'A', 
-      name: 'Main Entrance', 
-      zone: 'North Campus', 
+      name: 'Motorbike Entry Lane', 
+      zone: 'Motorbike Lot', 
+      laneType: 'two-wheel',
+      direction: 'entry',
       status: 'Online', 
       img: 'https://picsum.photos/seed/gateA_live/600/400',
       recTime: '10:45:22',
@@ -35,8 +39,10 @@ export default function OperatorApp() {
     },
     { 
       id: 'B', 
-      name: 'Staff Parking', 
-      zone: 'East Tower', 
+      name: 'Motorbike Exit Lane', 
+      zone: 'Motorbike Lot', 
+      laneType: 'two-wheel',
+      direction: 'exit',
       status: 'Alert', 
       img: 'https://picsum.photos/seed/gateB_live/600/400',
       alert: 'Obstruction Detected',
@@ -44,16 +50,20 @@ export default function OperatorApp() {
     },
     { 
       id: 'C', 
-      name: 'Library Exit', 
-      zone: 'Central Hub', 
+      name: 'Car Entry Lane', 
+      zone: 'Car Lot', 
+      laneType: 'four-wheel',
+      direction: 'entry',
       status: 'Offline', 
       img: '',
       lockState: 'closed'
     },
     { 
       id: 'D', 
-      name: 'Dormitory Entry', 
-      zone: 'Residential', 
+      name: 'Car Exit Lane', 
+      zone: 'Car Lot', 
+      laneType: 'four-wheel',
+      direction: 'exit',
       status: 'Online', 
       img: 'https://picsum.photos/seed/gateD_live/600/400',
       lockState: 'open'
@@ -137,7 +147,6 @@ export default function OperatorApp() {
           <Dashboard 
             onManualAction={handleManualAction}
             gates={gates}
-            onGatesChange={setGates}
           />
         );
       case 'gate-control':
@@ -153,7 +162,7 @@ export default function OperatorApp() {
       case 'settings':
         return <Settings />;
       default:
-        return <Dashboard onManualAction={handleManualAction} gates={gates} onGatesChange={setGates} />;
+        return <Dashboard onManualAction={handleManualAction} gates={gates} />;
     }
   };
 
