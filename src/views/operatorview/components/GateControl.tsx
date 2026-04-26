@@ -46,8 +46,14 @@ interface Feedback {
   timestamp: string;
 }
 
-export default function GateControl() {
-  const [gates, setGates] = useState<Gate[]>([
+interface GateControlProps {
+  gates?: Gate[];
+  onGatesChange?: (gates: Gate[]) => void;
+}
+
+export default function GateControl({ gates: externalGates, onGatesChange }: GateControlProps) {
+  // Use external gates if provided (from parent), otherwise maintain local state (fallback)
+  const [localGates, setLocalGates] = useState<Gate[]>([
     { 
       id: 'A', 
       name: 'Main Entrance', 
@@ -84,6 +90,9 @@ export default function GateControl() {
     },
   ]);
 
+  const gates = externalGates && externalGates.length > 0 ? externalGates : localGates;
+  const setGates = onGatesChange || setLocalGates;
+
   const [history, setHistory] = useState<HistoryEntry[]>([
     { action: 'Gate A Opened Manually', user: 'By Operator Nguyen Van A', time: '10:42 AM', type: 'open', reason: 'Vehicle waiting' },
     { action: 'Gate B Emergency Locked', user: 'Auto-lock: Obstruction Sensor', time: '10:35 AM', type: 'lock', reason: 'Obstruction detected' },
@@ -99,6 +108,8 @@ export default function GateControl() {
   const [actionType, setActionType] = useState<'open' | 'close' | 'emergency_lock'>('open');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [showEmergencyConfirm, setShowEmergencyConfirm] = useState(false);
+  const [pendingEmergency, setPendingEmergency] = useState<{ gate: Gate; reason: string } | null>(null);
 
   // Gate Type Filter
   const [gateFilter, setGateFilter] = useState<'all' | 'entrance' | 'exit'>('all');
@@ -134,6 +145,13 @@ export default function GateControl() {
         gateName: gate.name,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
+      return;
+    }
+
+    // Emergency lock requires explicit confirmation
+    if (type === 'emergency_lock') {
+      setShowEmergencyConfirm(true);
+      setPendingEmergency({ gate, reason: '' });
       return;
     }
 
@@ -333,8 +351,9 @@ export default function GateControl() {
                         className={`w-full h-full object-cover opacity-80 ${gate.status === 'Alert' ? 'brightness-50' : ''}`}
                         referrerPolicy="no-referrer"
                       />
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                        <Video className="text-white/50" size={40} />
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-t from-black/40 via-transparent to-transparent">
+                        <Video className="text-white/60 mb-2" size={40} />
+                        <p className="text-white text-xs font-bold uppercase tracking-widest">Live CCTV Feed</p>
                       </div>
                       {gate.recTime && (
                         <div className="absolute top-2 left-2 px-2 py-0.5 bg-black/60 rounded text-[10px] text-white font-mono">REC {gate.recTime}</div>
@@ -375,9 +394,10 @@ export default function GateControl() {
                       disabled={gate.status === 'Offline' || isSubmitting}
                       className={`col-span-2 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${
                         gate.status === 'Alert' 
-                          ? 'bg-red-600 text-white hover:bg-red-700' 
+                          ? 'bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/30' 
                           : 'bg-red-50 text-red-600 hover:bg-red-100'
                       } ${(gate.status === 'Offline' || isSubmitting) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      title="Emergency lock - restricted operation with confirmation required"
                     >
                       <Lock size={18} /> Emergency Lock
                     </button>
@@ -521,6 +541,89 @@ export default function GateControl() {
                   className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors"
                 >
                   Clear All Records
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Emergency Lock Confirmation Modal */}
+      {showEmergencyConfirm && pendingEmergency && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in-95">
+            {/* Header */}
+            <div className="px-6 py-4 bg-gradient-to-r from-red-600 to-red-700 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AlertCircle size={24} />
+                <h2 className="text-xl font-bold">Emergency Gate Lock</h2>
+              </div>
+              <button
+                onClick={() => {
+                  setShowEmergencyConfirm(false);
+                  setPendingEmergency(null);
+                }}
+                className="p-1 hover:bg-red-700 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-6 space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm font-bold text-red-800 mb-2">RESTRICTED OPERATION</p>
+                <p className="text-sm text-red-700">Emergency gate lock should only be used in critical situations:</p>
+                <ul className="text-xs text-red-600 mt-2 space-y-1 ml-4 list-disc">
+                  <li>Fire alarm or evacuation emergency</li>
+                  <li>Security threat or unauthorized access</li>
+                  <li>Complete gate mechanism failure</li>
+                </ul>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-800">Gate to Lock</label>
+                <div className="px-4 py-3 bg-slate-50 rounded-lg border border-slate-200">
+                  <p className="font-bold text-slate-800">{pendingEmergency.gate.name}</p>
+                  <p className="text-xs text-slate-500">Zone: {pendingEmergency.gate.zone}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-slate-800">Emergency Reason</label>
+                <textarea
+                  value={pendingEmergency.reason}
+                  onChange={(e) => setPendingEmergency({ ...pendingEmergency, reason: e.target.value })}
+                  placeholder="Describe the emergency situation..."
+                  className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-white focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none resize-none h-24 text-sm"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowEmergencyConfirm(false);
+                    setPendingEmergency(null);
+                  }}
+                  className="flex-1 px-4 py-3 border border-slate-300 rounded-lg font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (!pendingEmergency.reason.trim()) {
+                      alert('Please describe the emergency reason');
+                      return;
+                    }
+                    setSelectedGate(pendingEmergency.gate);
+                    setActionType('emergency_lock');
+                    setShowModal(true);
+                    setShowEmergencyConfirm(false);
+                    setPendingEmergency(null);
+                  }}
+                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                >
+                  Proceed with Lock
                 </button>
               </div>
             </div>

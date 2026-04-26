@@ -180,8 +180,12 @@ export default function ManualHandling() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-slate-400">
-                        <p>No sessions found</p>
+                      <td colSpan={4} className="px-6 py-12 text-center">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Search size={32} className="text-slate-300" />
+                          <p className="text-slate-500 font-medium">No pending cases found</p>
+                          <p className="text-xs text-slate-400">Search results will appear here</p>
+                        </div>
                       </td>
                     </tr>
                   )}
