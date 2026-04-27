@@ -24,37 +24,55 @@ import OperationsLog from './OperationsLog';
 export default function ManualHandling() {
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Session data
+  // Session data - Realistic University Parking Scenarios
   const [sessions, setSessions] = useState([
     { 
       id: '1',
       vehicle: '59P1-998.23', 
       studentId: '2010884', 
       entryTime: '08:45 AM', 
-      gate: 'Gate A1',
-      zone: 'B',
+      gate: 'Motorbike Entry Lane',
+      zone: 'Motorbike Lot',
       status: 'LOST_CARD' as const,
       type: 'bike' as const,
-      duration: '47 min',
-      fee: 5000,
+      duration: '67 min',
+      fee: 20000,
       paymentStatus: 'unpaid',
-      waitTime: '47 min',
-      priority: 'high' as const
+      waitTime: '67 min',
+      priority: 'high' as const,
+      reason: 'Reported lost card during morning rush'
     },
     { 
       id: '2',
       vehicle: '51H-123.45', 
-      studentId: 'Guest', 
+      studentId: '2011256', 
       entryTime: '09:12 AM', 
-      gate: 'Gate B2',
-      zone: 'A',
+      gate: 'Car Entry Lane',
+      zone: 'Car Lot',
       status: 'SCAN_FAIL' as const,
       type: 'car' as const,
-      duration: '12 min',
+      duration: '23 min',
       fee: 10000,
       paymentStatus: 'unpaid',
-      waitTime: '12 min',
-      priority: 'medium' as const
+      waitTime: '23 min',
+      priority: 'medium' as const,
+      reason: 'Card reader malfunction - unable to scan'
+    },
+    { 
+      id: '3',
+      vehicle: '77K-456.12', 
+      studentId: '2010456', 
+      entryTime: '08:15 AM', 
+      gate: 'Car Entry Lane',
+      zone: 'Car Lot',
+      status: 'OVERSTAYED' as const,
+      type: 'car' as const,
+      duration: '120 min',
+      fee: 50000,
+      paymentStatus: 'unpaid',
+      waitTime: '34 min (waiting for payment)',
+      priority: 'medium' as const,
+      reason: 'Exceeded parking limit - overparking fine pending'
     },
   ]);
 
@@ -181,23 +199,43 @@ export default function ManualHandling() {
                         <td className="px-6 py-4">
                           <div className="space-y-1.5">
                             <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold ${
-                              session.status === 'LOST_CARD' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+                              session.status === 'LOST_CARD' ? 'bg-red-100 text-red-600' : session.status === 'SCAN_FAIL' ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'
                             }`}>
-                              <span className={`size-1.5 rounded-full ${session.status === 'LOST_CARD' ? 'bg-red-600' : 'bg-blue-600'}`}></span>
-                              {session.status === 'LOST_CARD' ? 'LOST CARD' : 'SCAN FAILED'}
+                              <span className={`size-1.5 rounded-full ${session.status === 'LOST_CARD' ? 'bg-red-600' : session.status === 'SCAN_FAIL' ? 'bg-blue-600' : 'bg-orange-600'}`}></span>
+                              {session.status === 'LOST_CARD' ? 'LOST CARD' : session.status === 'SCAN_FAIL' ? 'SCAN FAILED' : 'OVERSTAYED'}
                             </div>
-                            <p className={`text-xs font-bold ${session.priority === 'high' ? 'text-orange-600' : 'text-slate-500'}`}>
+                            <p className={`text-xs font-bold ${session.priority === 'high' ? 'text-red-600' : 'text-slate-500'}`}>
                               Wait: {session.waitTime}
                             </p>
+                            <p className="text-[10px] text-slate-400">{session.reason}</p>
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <button 
-                            onClick={() => handleReleaseGate(session.vehicle, session.id)}
-                            className="text-primary font-bold text-sm hover:underline hover:text-primary/80 transition-colors"
-                          >
-                            {session.status === 'LOST_CARD' ? 'Release Gate' : 'Mark Paid'}
-                          </button>
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => handleReleaseGate(session.vehicle, session.id)}
+                              className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded text-xs font-bold hover:bg-emerald-100 transition-colors border border-emerald-200"
+                              title="Resolve case and release gate"
+                            >
+                              Resolve
+                            </button>
+                            {session.status === 'LOST_CARD' && (
+                              <button 
+                                onClick={() => alert(`Temporary pass issued for ${session.vehicle}. Valid for 7 days. Fee: ₫${session.fee.toLocaleString('vi-VN')}`)} 
+                                className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded text-xs font-bold hover:bg-blue-100 transition-colors border border-blue-200"
+                                title="Issue temporary pass for lost card"
+                              >
+                              Temp Pass
+                              </button>
+                            )}
+                            <button 
+                              onClick={() => alert(`Case escalated for ${session.vehicle}. Supervisor notified. Fee: ₫${session.fee.toLocaleString('vi-VN')}`)} 
+                              className="px-3 py-1.5 bg-purple-50 text-purple-700 rounded text-xs font-bold hover:bg-purple-100 transition-colors border border-purple-200"
+                              title="Escalate to supervisor"
+                            >
+                              Escalate
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
