@@ -58,21 +58,19 @@ export default function IncidentAlerts({ onRefresh }: IncidentAlertsProps) {
   };
 
   return (
-    <div>
-      {/* Functional elements - Badge + Resolve Button (header handled by Dashboard) */}
-      {incidents.length > 0 && (
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex-1">
-            <p className="text-sm text-slate-500">Auto-detected issues: duplicate entries, unpaid exits, sensor mismatches</p>
-          </div>
-          <button
-            onClick={() => alert('Resolving all incidents...')}
-            className="flex items-center gap-2 px-6 py-3 rounded-lg bg-red-600 text-white font-bold hover:bg-red-700 transition-colors whitespace-nowrap ml-4"
-          >
-            Resolve All
-          </button>
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-bold">Incidents & Alerts</h2>
+          <p className="text-xs text-slate-500 mt-1">Auto-detected issues: duplicate entries, unpaid exits, sensor mismatches</p>
         </div>
-      )}
+        <button
+          onClick={onRefresh}
+          className="text-primary text-sm font-semibold hover:underline flex items-center gap-1"
+        >
+          Refresh
+        </button>
+      </div>
 
       <div className="space-y-3">
         {incidents.length > 0 ? (
@@ -81,22 +79,18 @@ export default function IncidentAlerts({ onRefresh }: IncidentAlertsProps) {
             return (
               <div
                 key={incident.id}
-                className={`flex items-start gap-4 p-4 border-2 rounded-xl ${styles.bg} ${styles.border} transition-opacity ${
+                className={`flex items-start gap-3 p-3 border rounded-lg ${styles.bg} ${styles.border} transition-opacity ${
                   incident.resolved ? 'opacity-50' : ''
                 }`}
               >
-                <AlertCircle className={`${styles.icon} flex-shrink-0 mt-1`} size={24} />
+                <AlertCircle className={`${styles.icon} flex-shrink-0 mt-0.5`} size={18} />
                 <div className="flex-1">
-                  <p className={`text-base font-bold ${styles.text}`}>{incident.title}</p>
-                  <p className={`text-sm mt-1 ${styles.text} opacity-75`}>{incident.description}</p>
-                  <p className="text-xs text-slate-500 mt-2">{incident.timestamp}</p>
+                  <p className={`text-sm font-semibold ${styles.text}`}>{incident.title}</p>
+                  <p className={`text-xs mt-1 ${styles.text} opacity-75`}>{incident.description}</p>
+                  <p className="text-xs text-slate-500 mt-1">{incident.timestamp}</p>
                 </div>
                 {!incident.resolved && (
-                  <button className={`text-sm font-bold px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
-                    incident.severity === 'critical'
-                      ? 'bg-red-600 text-white hover:bg-red-700'
-                      : 'bg-amber-600 text-white hover:bg-amber-700'
-                  }`}>
+                  <button className="text-xs font-semibold px-2 py-1 rounded hover:opacity-80 transition-opacity whitespace-nowrap">
                     Resolve
                   </button>
                 )}
@@ -104,9 +98,9 @@ export default function IncidentAlerts({ onRefresh }: IncidentAlertsProps) {
             );
           })
         ) : (
-          <div className="text-center py-12 text-slate-400">
-            <Zap size={40} className="mx-auto mb-3 opacity-30" />
-            <p className="text-base font-medium">No active incidents</p>
+          <div className="text-center py-8 text-slate-400">
+            <Zap size={32} className="mx-auto mb-2 opacity-30" />
+            <p className="text-sm">No active incidents</p>
           </div>
         )}
       </div>
